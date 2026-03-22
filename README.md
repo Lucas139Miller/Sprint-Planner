@@ -26,7 +26,7 @@ Criar uma aplicação web que permita a times pequenos gerenciar sprints de form
 * Inteligência Artificial
   - API da Claude (Anthropic)
   - Claude Code / Cursor / Copilot para desenvolvimento do sistema
-  - 
+    
 # Histórias de Usuários
 
 1. Como usuário, quero criar uma conta e fazer login para acessar meus projetos.
