@@ -400,3 +400,44 @@ sequenceDiagram
 - **Criador = PO automático**: ao criar projeto, o dono é inserido em project_members como PO
 - **INNER JOIN**: combina dados de projects + project_members para retornar o role do usuário
 - **router.use(authMiddleware)**: aplica autenticação em TODAS as rotas do arquivo de uma vez
+
+---
+
+## Commit 10 — Adiciona rotas de convite e listagem de membros
+
+**O que foi feito:** Implementou as rotas para convidar membros a um projeto (por email ou username) e listar os membros atuais. Apenas o dono do projeto pode convidar.
+
+**Arquivos modificados:** `backend/src/routes/projects.js`
+
+```mermaid
+graph TB
+    subgraph Convidar["POST /api/projects/:id/members"]
+        C1["Recebe { identifier, role }"]
+        C2{"Usuário logado é<br/>o dono do projeto?"}
+        C2 -->|"Não"| C3["403 Apenas o dono pode convidar"]
+        C2 -->|"Sim"| C4["Busca user por email OR username"]
+        C4 -->|"Não encontrou"| C5["404 Usuário não encontrado"]
+        C4 -->|"Encontrou"| C6["INSERT INTO project_members"]
+        C6 -->|"UNIQUE violado"| C7["409 Já é membro"]
+        C6 -->|"Sucesso"| C8["201 { id, username, email, role }"]
+    end
+
+    subgraph Listar["GET /api/projects/:id/members"]
+        L1{"Usuário logado<br/>é membro?"}
+        L1 -->|"Não"| L2["403 Não é membro"]
+        L1 -->|"Sim"| L3["SELECT users JOIN project_members"]
+        L3 --> L4["200 [{ username, email, role }]"]
+    end
+
+    style C3 fill:#d9534f,color:#fff
+    style C5 fill:#f0ad4e,color:#fff
+    style C7 fill:#f0ad4e,color:#fff
+    style C8 fill:#5cb85c,color:#fff
+    style L2 fill:#d9534f,color:#fff
+    style L4 fill:#5cb85c,color:#fff
+```
+
+**Conceitos introduzidos:**
+- **Busca flexível**: `WHERE email = ? OR username = ?` permite convidar por email ou username
+- **Controle de acesso**: apenas owner_id pode convidar, qualquer membro pode listar
+- **Tratamento de duplicata**: UNIQUE constraint capturada como erro 409
