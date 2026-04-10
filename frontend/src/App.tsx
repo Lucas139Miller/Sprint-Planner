@@ -3,6 +3,7 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import Projects from './pages/Projects'
 import CreateProject from './pages/CreateProject'
+import ProjectDetail from './pages/ProjectDetail'
 
 // Tipo que define a estrutura dos dados do usuário
 interface User {
@@ -74,11 +75,17 @@ function App() {
       </header>
       {/* Renderiza a página interna baseada no estado */}
       <main>
-        {page === 'create-project' ? (
+        {page === 'create-project' && (
           <CreateProject token={token}
             onCreated={() => setPage('projects')}
             onBack={() => setPage('projects')} />
-        ) : (
+        )}
+        {page === 'project-detail' && selectedProjectId && (
+          <ProjectDetail token={token}
+            projectId={selectedProjectId}
+            onBack={() => setPage('projects')} />
+        )}
+        {(page === 'projects' || (page !== 'create-project' && page !== 'project-detail')) && (
           <Projects token={token}
             onCreateProject={() => setPage('create-project')}
             onSelectProject={(id) => { setSelectedProjectId(id); setPage('project-detail') }} />

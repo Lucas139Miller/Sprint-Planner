@@ -518,3 +518,50 @@ graph LR
 - **textarea controlado**: campo de múltiplas linhas vinculado a useState
 - **Callback de sucesso**: onCreated() muda o estado do App para voltar à lista
 - **Token no header**: Authorization Bearer token em toda requisição autenticada
+
+---
+
+## Commit 13 — Adiciona página de detalhes do projeto com convite de membros
+
+**O que foi feito:** Criou ProjectDetail.tsx com lista de membros atuais e formulário de convite (email/username + dropdown de role). App.tsx agora renderiza 3 páginas internas.
+
+**Arquivos criados:** `frontend/src/pages/ProjectDetail.tsx`  
+**Arquivos modificados:** `frontend/src/App.tsx`
+
+```mermaid
+graph TB
+    subgraph ProjectDetail["ProjectDetail.tsx"]
+        Mount["useEffect → fetchMembers()"]
+        Mount -->|"GET /projects/:id/members"| MemberList
+
+        subgraph MemberList["Lista de Membros"]
+            M1["👤 owner — owner@t.com — PO"]
+            M2["👤 dev1 — dev1@t.com — Dev"]
+        end
+
+        subgraph InviteForm["Formulário de Convite"]
+            Input["Input: email ou username"]
+            Select["Select: Dev | Scrum Master | PO"]
+            Btn["Botão Convidar"]
+        end
+
+        Btn -->|"POST /projects/:id/members<br/>{ identifier, role }"| API["Backend"]
+        API -->|"Sucesso"| Success["✅ 'dev2 adicionado como Dev'"]
+        API -->|"Erro"| Error["❌ 'Usuário já é membro'"]
+        Success --> Mount
+    end
+
+    subgraph Navigation["Navegação no App.tsx"]
+        Projects["Projects.tsx"] -->|"Clica no card"| ProjectDetail
+        ProjectDetail -->|"← Voltar aos projetos"| Projects
+    end
+
+    style Success fill:#5cb85c,color:#fff
+    style Error fill:#d9534f,color:#fff
+    style MemberList fill:#f0f4ff,stroke:#4a90d9
+```
+
+**Conceitos introduzidos:**
+- **Refresh após ação**: fetchMembers() é chamado novamente após convite bem-sucedido
+- **select controlado**: dropdown HTML vinculado a useState com 3 opções de role
+- **Feedback visual**: mensagens de sucesso (verde) e erro (vermelho) distintas
