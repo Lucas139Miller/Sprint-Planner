@@ -360,3 +360,43 @@ graph TB
 - **CHECK constraint**: role só aceita 'PO', 'Scrum Master' ou 'Dev' no nível do banco
 - **UNIQUE composto**: (project_id, user_id) impede membro duplicado
 - **Middleware Express**: função que intercepta a requisição antes da rota, ideal para auth
+
+---
+
+## Commit 9 — Adiciona rotas CRUD de projetos (criar e listar)
+
+**O que foi feito:** Criou as rotas para criar e listar projetos. O criador do projeto é automaticamente adicionado como PO. Todas as rotas são protegidas pelo middleware JWT.
+
+**Arquivos criados:** `backend/src/routes/projects.js`  
+**Arquivos modificados:** `backend/src/server.js` (monta rotas em /api/projects)
+
+```mermaid
+sequenceDiagram
+    participant U as Usuário (logado)
+    participant F as Frontend
+    participant MW as Middleware Auth
+    participant R as routes/projects.js
+    participant DB as SQLite
+
+    Note over U,DB: CRIAR PROJETO (POST /api/projects)
+    U->>F: Nome + Descrição
+    F->>MW: Authorization: Bearer token
+    MW->>MW: jwt.verify(token)
+    MW->>R: req.user = { id, username }
+    R->>DB: INSERT INTO projects (name, desc, owner_id)
+    DB-->>R: project.id
+    R->>DB: INSERT INTO project_members (project_id, user_id, 'PO')
+    R-->>F: { id, name, description, role: 'PO' }
+
+    Note over U,DB: LISTAR PROJETOS (GET /api/projects)
+    F->>MW: Authorization: Bearer token
+    MW->>R: req.user = { id }
+    R->>DB: SELECT projects JOIN project_members WHERE user_id = ?
+    DB-->>R: lista de projetos com role
+    R-->>F: [{ id, name, description, role, created_at }]
+```
+
+**Conceitos introduzidos:**
+- **Criador = PO automático**: ao criar projeto, o dono é inserido em project_members como PO
+- **INNER JOIN**: combina dados de projects + project_members para retornar o role do usuário
+- **router.use(authMiddleware)**: aplica autenticação em TODAS as rotas do arquivo de uma vez
