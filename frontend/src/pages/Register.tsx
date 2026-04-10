@@ -1,0 +1,62 @@
+import { useState } from 'react'
+
+interface RegisterProps {
+  onSwitch: () => void
+  onLogin: (token: string, user: { id: number; username: string; email: string }) => void
+}
+
+export default function Register({ onSwitch, onLogin }: RegisterProps) {
+  const [username, setUsername] = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setError('')
+
+    const res = await fetch('http://localhost:3001/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, email, password }),
+    })
+
+    const data = await res.json()
+    if (!res.ok) return setError(data.error)
+    onLogin(data.token, data.user)
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <form onSubmit={handleSubmit} className="bg-white p-8 rounded-lg shadow-md w-96">
+        <h1 className="text-2xl font-bold text-blue-700 mb-6">Criar Conta</h1>
+
+        {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
+
+        <input type="text" placeholder="Nome de usuário" value={username}
+          onChange={e => setUsername(e.target.value)} required
+          className="w-full mb-4 p-2 border rounded focus:outline-blue-500" />
+
+        <input type="email" placeholder="Email" value={email}
+          onChange={e => setEmail(e.target.value)} required
+          className="w-full mb-4 p-2 border rounded focus:outline-blue-500" />
+
+        <input type="password" placeholder="Senha" value={password}
+          onChange={e => setPassword(e.target.value)} required
+          className="w-full mb-6 p-2 border rounded focus:outline-blue-500" />
+
+        <button type="submit"
+          className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">
+          Criar Conta
+        </button>
+
+        <p className="mt-4 text-sm text-center text-gray-600">
+          Já tem conta?{' '}
+          <button type="button" onClick={onSwitch} className="text-blue-600 hover:underline">
+            Fazer login
+          </button>
+        </p>
+      </form>
+    </div>
+  )
+}
