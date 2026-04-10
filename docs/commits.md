@@ -565,3 +565,40 @@ graph TB
 - **Refresh após ação**: fetchMembers() é chamado novamente após convite bem-sucedido
 - **select controlado**: dropdown HTML vinculado a useState com 3 opções de role
 - **Feedback visual**: mensagens de sucesso (verde) e erro (vermelho) distintas
+
+---
+
+## Commit 14 — Atualiza CLAUDE.md com endpoints, estrutura e diagrama da US2
+
+**O que foi feito:** Atualizou a documentação do projeto: novos endpoints (projects, members), estrutura de diretórios expandida, diagrama de arquitetura atualizado e US2 marcada como concluída.
+
+**Arquivos modificados:** `CLAUDE.md`, `docs/commits.md`
+
+```mermaid
+graph TB
+    subgraph US2["US2 Concluída - Criar projeto e convidar membros"]
+        subgraph BackendUS2["Backend (3 commits)"]
+            DB["Tabelas projects +<br/>project_members"]
+            MW["Middleware JWT"]
+            Routes["4 endpoints REST"]
+        end
+
+        subgraph FrontendUS2["Frontend (3 commits)"]
+            ProjList["Projects.tsx<br/>Grid de cards"]
+            ProjCreate["CreateProject.tsx<br/>Formulário"]
+            ProjDetail["ProjectDetail.tsx<br/>Membros + Convite"]
+        end
+    end
+
+    DB --> Routes
+    MW --> Routes
+    ProjList -->|"GET /projects"| Routes
+    ProjCreate -->|"POST /projects"| Routes
+    ProjDetail -->|"GET + POST /projects/:id/members"| Routes
+
+    style US2 fill:#dff0d8,stroke:#5cb85c
+    style BackendUS2 fill:#d9edf7,stroke:#5bc0de
+    style FrontendUS2 fill:#fef3cd,stroke:#f0ad4e
+```
+
+**Resumo da US2:** 7 commits, ~600 linhas, backend completo com auth middleware + CRUD projetos + membros, frontend com 3 novas páginas e navegação por estado.

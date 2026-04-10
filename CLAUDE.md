@@ -29,20 +29,28 @@ sprint-planner/
 ├── backend/
 │   ├── src/
 │   │   ├── server.js          # Servidor Express + middlewares + montagem de rotas
-│   │   ├── database.js        # Conexão SQLite + criação de tabelas
+│   │   ├── database.js        # Conexão SQLite + criação de tabelas (users, projects, project_members)
+│   │   ├── middleware/
+│   │   │   └── auth.js        # Middleware JWT - verifica token e anexa req.user
 │   │   └── routes/
-│   │       └── auth.js        # POST /register e /login (bcrypt + JWT)
+│   │       ├── auth.js        # POST /register e /login (bcrypt + JWT)
+│   │       └── projects.js    # CRUD projetos + convite/listagem de membros
 │   └── package.json
 ├── frontend/
 │   ├── src/
 │   │   ├── main.tsx           # Entry point React
-│   │   ├── App.tsx            # Componente raiz - gerencia estado de auth
+│   │   ├── App.tsx            # Componente raiz - gerencia auth + navegação
 │   │   ├── index.css          # Tailwind imports
 │   │   └── pages/
-│   │       ├── Login.tsx      # Formulário de login
-│   │       └── Register.tsx   # Formulário de registro
+│   │       ├── Login.tsx          # Formulário de login
+│   │       ├── Register.tsx       # Formulário de registro
+│   │       ├── Projects.tsx       # Lista de projetos (grid cards)
+│   │       ├── CreateProject.tsx  # Formulário criar projeto
+│   │       └── ProjectDetail.tsx  # Detalhes + convite de membros
 │   ├── tailwind.config.js
 │   └── package.json
+├── docs/
+│   └── commits.md             # Diagramas Mermaid de cada commit
 ├── CLAUDE.md                  # Este arquivo
 └── .gitignore
 ```
@@ -67,16 +75,20 @@ sprint-planner/
 
 ## Endpoints da API
 
-| Método | Rota | Descrição | Body |
-|--------|------|-----------|------|
-| GET | `/api/health` | Health check | - |
-| POST | `/api/auth/register` | Criar conta | `{ username, email, password }` |
-| POST | `/api/auth/login` | Login | `{ email, password }` |
+| Método | Rota | Descrição | Body | Auth |
+|--------|------|-----------|------|------|
+| GET | `/api/health` | Health check | - | Não |
+| POST | `/api/auth/register` | Criar conta | `{ username, email, password }` | Não |
+| POST | `/api/auth/login` | Login | `{ email, password }` | Não |
+| POST | `/api/projects` | Criar projeto | `{ name, description }` | JWT |
+| GET | `/api/projects` | Listar projetos do usuário | - | JWT |
+| POST | `/api/projects/:id/members` | Convidar membro | `{ identifier, role }` | JWT (owner) |
+| GET | `/api/projects/:id/members` | Listar membros | - | JWT (membro) |
 
 ## Histórias de Usuário (Roadmap)
 
 - [x] **US1**: Criar conta e fazer login
-- [ ] **US2**: Criar projeto e convidar membros
+- [x] **US2**: Criar projeto e convidar membros
 - [ ] **US3**: Adicionar histórias ao backlog (PO)
 - [ ] **US4**: Criar sprint com datas
 - [ ] **US5**: Mover histórias do backlog para o sprint
@@ -90,36 +102,35 @@ sprint-planner/
 ```mermaid
 graph TB
     subgraph Frontend["Frontend (React + TS - porta 5173)"]
-        App[App.tsx<br/>Gerencia estado de auth]
-        Login[Login.tsx<br/>Formulário de login]
-        Register[Register.tsx<br/>Formulário de registro]
+        App[App.tsx<br/>Auth + Navegação]
+        Login[Login.tsx]
+        Register[Register.tsx]
+        Projects[Projects.tsx<br/>Grid de cards]
+        CreateProj[CreateProject.tsx]
+        ProjDetail[ProjectDetail.tsx<br/>Membros + Convite]
     end
 
     subgraph Backend["Backend (Express - porta 3001)"]
-        Server[server.js<br/>Express + CORS + JSON]
-        AuthRoutes[routes/auth.js<br/>POST /register e /login]
+        Server[server.js<br/>Express + CORS]
+        AuthMW[middleware/auth.js<br/>Verifica JWT]
+        AuthRoutes[routes/auth.js<br/>register + login]
+        ProjRoutes[routes/projects.js<br/>CRUD + membros]
     end
 
     subgraph Database["SQLite"]
-        Users[(users<br/>id, username, email, password, created_at)]
+        Users[(users)]
+        ProjectsDB[(projects)]
+        Members[(project_members)]
     end
 
-    subgraph Auth["Segurança"]
-        Bcrypt[bcrypt<br/>Hash irreversível de senhas]
-        JWT[JWT<br/>Token assinado com expiração 7d]
-        Storage[localStorage<br/>Persiste token + user no navegador]
-    end
-
-    App -->|Não autenticado| Login
-    App -->|Não autenticado| Register
-    Login -->|POST /api/auth/login| Server
-    Register -->|POST /api/auth/register| Server
-    Server --> AuthRoutes
-    AuthRoutes -->|INSERT / SELECT| Users
-    AuthRoutes --> Bcrypt
-    AuthRoutes --> JWT
-    JWT -->|token| App
-    App --> Storage
+    App --> Login & Register & Projects & CreateProj & ProjDetail
+    Login & Register -->|"/api/auth/*"| AuthRoutes
+    Projects & CreateProj & ProjDetail -->|"/api/projects/*"| AuthMW
+    AuthMW --> ProjRoutes
+    AuthRoutes --> Users
+    ProjRoutes --> ProjectsDB & Members
+    Users --- Members
+    ProjectsDB --- Members
 ```
 
 ## Fluxo de Autenticação (Mermaid)
