@@ -1,0 +1,17 @@
+{
+  "name": "sprint-planner-backend",
+  "version": "1.0.0",
+  "description": "Backend do Sprint Planner - Gerenciador de Sprints com IA",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "express": "^4.21.0",
+    "better-sqlite3": "^11.6.0",
+    "jsonwebtoken": "^9.0.2"
+  }
+}
