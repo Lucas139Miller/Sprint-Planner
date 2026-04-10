@@ -315,3 +315,48 @@ graph TB
 - **Compatibilidade de versões**: Node 20.18 não suporta Vite 6+ (que usa rolldown nativo)
 - **PostCSS**: processador CSS que o Tailwind v3 usa para compilar as classes utilitárias
 - **Código auto-documentado**: comentários explicando o "porquê" de cada decisão
+
+---
+
+## Commit 8 — Adiciona tabelas projects/project_members e middleware JWT
+
+**O que foi feito:** Criou as tabelas de projetos e membros no banco de dados. Criou o middleware de autenticação JWT que protege rotas privadas.
+
+**Arquivos criados:** `backend/src/middleware/auth.js`  
+**Arquivos modificados:** `backend/src/database.js`
+
+```mermaid
+graph TB
+    subgraph Banco["SQLite - Tabelas"]
+        Users[("users<br/>id | username | email<br/>password | created_at")]
+        Projects[("projects<br/>id | name | description<br/>owner_id → users.id<br/>created_at")]
+        Members[("project_members<br/>id | project_id → projects.id<br/>user_id → users.id<br/>role (PO/SM/Dev)<br/>UNIQUE(project, user)")]
+    end
+
+    Users -->|"1:N — um user cria vários projetos"| Projects
+    Users -->|"N:N — um user participa de vários projetos"| Members
+    Projects -->|"1:N — um projeto tem vários membros"| Members
+
+    subgraph Middleware["middleware/auth.js"]
+        MW1["Extrai header Authorization: Bearer token"]
+        MW2["jwt.verify(token, SECRET)"]
+        MW3["req.user = { id, username }"]
+        MW4["next() → rota executa"]
+    end
+
+    MW1 --> MW2 --> MW3 --> MW4
+
+    ReqProtegida(("Requisição<br/>protegida")) -->|"Header: Bearer eyJ..."| MW1
+    MW4 -->|"req.user disponível"| Rota["Rota protegida<br/>(projects, members...)"]
+
+    style Projects fill:#f0ad4e,color:#fff
+    style Members fill:#5bc0de,color:#fff
+    style Users fill:#5cb85c,color:#fff
+    style MW2 fill:#7c3aed,color:#fff
+```
+
+**Conceitos introduzidos:**
+- **FOREIGN KEY**: garante integridade referencial (owner_id deve existir em users)
+- **CHECK constraint**: role só aceita 'PO', 'Scrum Master' ou 'Dev' no nível do banco
+- **UNIQUE composto**: (project_id, user_id) impede membro duplicado
+- **Middleware Express**: função que intercepta a requisição antes da rota, ideal para auth

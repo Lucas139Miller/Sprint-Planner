@@ -24,5 +24,38 @@ db.exec(`
   )
 `);
 
+// Tabela de projetos - cada projeto tem um dono (owner_id) que é o usuário que criou
+// - name: nome do projeto (obrigatório)
+// - description: descrição opcional do projeto
+// - owner_id: referência ao usuário criador (FOREIGN KEY para users.id)
+db.exec(`
+  CREATE TABLE IF NOT EXISTS projects (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    description TEXT,
+    owner_id INTEGER NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (owner_id) REFERENCES users(id)
+  )
+`);
+
+// Tabela de membros do projeto - relacionamento N:N entre users e projects
+// Um usuário pode estar em vários projetos, e um projeto pode ter vários membros
+// - role: papel do membro no Scrum (PO, Scrum Master ou Dev)
+// - CHECK: garante que só aceita os 3 papéis válidos no nível do banco
+// - UNIQUE(project_id, user_id): impede que o mesmo usuário seja adicionado duas vezes
+db.exec(`
+  CREATE TABLE IF NOT EXISTS project_members (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    role TEXT NOT NULL CHECK(role IN ('PO', 'Scrum Master', 'Dev')),
+    invited_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (project_id) REFERENCES projects(id),
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    UNIQUE(project_id, user_id)
+  )
+`);
+
 // Exporta a conexão do banco para ser usada em outros arquivos
 module.exports = db;
