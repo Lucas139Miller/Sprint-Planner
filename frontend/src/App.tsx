@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import Login from './pages/Login'
 import Register from './pages/Register'
+import Projects from './pages/Projects'
 
 // Tipo que define a estrutura dos dados do usuário
 interface User {
@@ -17,8 +18,11 @@ function App() {
   // Estado do usuário logado (null = não logado)
   const [user, setUser] = useState<User | null>(null)
 
-  // Controla qual página mostrar: tela de login ou de registro
-  const [page, setPage] = useState<'login' | 'register'>('login')
+  // Controla qual página mostrar dentro do app
+  const [page, setPage] = useState<'login' | 'register' | 'projects' | 'create-project' | 'project-detail'>('login')
+
+  // ID do projeto selecionado para a tela de detalhes
+  const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null)
 
   // useEffect roda quando o componente carrega (e quando 'token' muda)
   // Recupera os dados do usuário salvos no localStorage
@@ -67,9 +71,11 @@ function App() {
           </button>
         </div>
       </header>
-      <main className="p-8 text-center text-gray-500">
-        <p className="text-lg">Bem-vindo ao Sprint Planner!</p>
-        <p className="mt-2">Seus projetos aparecerão aqui em breve.</p>
+      {/* Renderiza a página interna baseada no estado */}
+      <main>
+        <Projects token={token}
+          onCreateProject={() => setPage('create-project')}
+          onSelectProject={(id) => { setSelectedProjectId(id); setPage('project-detail') }} />
       </main>
     </div>
   )

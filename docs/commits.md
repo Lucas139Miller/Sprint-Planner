@@ -441,3 +441,44 @@ graph TB
 - **Busca flexível**: `WHERE email = ? OR username = ?` permite convidar por email ou username
 - **Controle de acesso**: apenas owner_id pode convidar, qualquer membro pode listar
 - **Tratamento de duplicata**: UNIQUE constraint capturada como erro 409
+
+---
+
+## Commit 11 — Adiciona página de lista de projetos no frontend
+
+**O que foi feito:** Criou o componente Projects.tsx que exibe os projetos do usuário em cards com badges de role. Atualizou App.tsx com sistema de navegação por estado.
+
+**Arquivos criados:** `frontend/src/pages/Projects.tsx`  
+**Arquivos modificados:** `frontend/src/App.tsx`
+
+```mermaid
+graph TB
+    subgraph AppNavigation["App.tsx - Navegação por Estado"]
+        State["page state"]
+        State -->|"'login'"| Login["Login.tsx"]
+        State -->|"'register'"| Register["Register.tsx"]
+        State -->|"'projects'"| Projects["Projects.tsx"]
+        State -->|"'create-project'"| CP["CreateProject.tsx<br/>(próximo commit)"]
+        State -->|"'project-detail'"| PD["ProjectDetail.tsx<br/>(próximo commit)"]
+    end
+
+    subgraph ProjectsPage["Projects.tsx"]
+        Mount["useEffect ao montar"] -->|"GET /api/projects<br/>Bearer token"| API["Backend API"]
+        API -->|"[{ id, name, role, ... }]"| Grid["Grid de Cards"]
+        Grid --> Card1["Card Projeto 1<br/>nome + descrição<br/>badge PO"]
+        Grid --> Card2["Card Projeto 2<br/>nome + descrição<br/>badge Dev"]
+        BtnNew["Botão + Novo Projeto"] -->|"onCreateProject()"| CP
+        Card1 -->|"onSelectProject(id)"| PD
+    end
+
+    style Projects fill:#61dafb,color:#333
+    style Login fill:#ccc,color:#333
+    style Register fill:#ccc,color:#333
+    style CP fill:#ddd,color:#999,stroke-dasharray: 5 5
+    style PD fill:#ddd,color:#999,stroke-dasharray: 5 5
+```
+
+**Conceitos introduzidos:**
+- **Navegação por estado**: em vez de react-router, usa useState para controlar qual página exibir
+- **Grid responsivo**: `grid-cols-1 md:grid-cols-2 lg:grid-cols-3` adapta ao tamanho da tela
+- **Role badges**: cores diferentes por papel (PO=roxo, SM=verde, Dev=azul)
