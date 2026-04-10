@@ -60,7 +60,7 @@ sprint-planner/
 
 1. **Máximo ~100 linhas de código por commit** (scaffold/gerado não conta)
 2. **Mensagem clara**: título curto + corpo explicando o que e por quê
-3. **Diagrama Mermaid**: cada commit deve incluir ou atualizar um diagrama `.md` documentando a arquitetura/fluxo alterado
+3. **Diagrama Mermaid**: cada commit deve incluir ou atualizar `docs/commits.md` com um diagrama Mermaid documentando o que foi feito
 4. **Código comentado**: todo código novo deve ter comentários explicativos
 5. **Testar antes de commitar**: rodar type check no frontend e testar endpoints no backend
 6. **Co-author**: incluir `Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>`
