@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Projects from './pages/Projects'
+import CreateProject from './pages/CreateProject'
 
 // Tipo que define a estrutura dos dados do usuário
 interface User {
@@ -73,9 +74,15 @@ function App() {
       </header>
       {/* Renderiza a página interna baseada no estado */}
       <main>
-        <Projects token={token}
-          onCreateProject={() => setPage('create-project')}
-          onSelectProject={(id) => { setSelectedProjectId(id); setPage('project-detail') }} />
+        {page === 'create-project' ? (
+          <CreateProject token={token}
+            onCreated={() => setPage('projects')}
+            onBack={() => setPage('projects')} />
+        ) : (
+          <Projects token={token}
+            onCreateProject={() => setPage('create-project')}
+            onSelectProject={(id) => { setSelectedProjectId(id); setPage('project-detail') }} />
+        )}
       </main>
     </div>
   )

@@ -482,3 +482,39 @@ graph TB
 - **Navegação por estado**: em vez de react-router, usa useState para controlar qual página exibir
 - **Grid responsivo**: `grid-cols-1 md:grid-cols-2 lg:grid-cols-3` adapta ao tamanho da tela
 - **Role badges**: cores diferentes por papel (PO=roxo, SM=verde, Dev=azul)
+
+---
+
+## Commit 12 — Adiciona formulário de criação de projeto
+
+**O que foi feito:** Criou o componente CreateProject.tsx com formulário para nome e descrição. Após criar, volta automaticamente para a lista de projetos.
+
+**Arquivos criados:** `frontend/src/pages/CreateProject.tsx`  
+**Arquivos modificados:** `frontend/src/App.tsx`
+
+```mermaid
+graph LR
+    subgraph Fluxo["Fluxo de Criação de Projeto"]
+        List["Projects.tsx<br/>Lista de projetos"]
+        List -->|"Clica + Novo Projeto"| Form["CreateProject.tsx<br/>Formulário"]
+        Form -->|"POST /api/projects<br/>{ name, description }"| API["Backend"]
+        API -->|"201 Created"| List
+        Form -->|"Clica Voltar"| List
+    end
+
+    subgraph FormFields["Campos do Formulário"]
+        F1["Nome * (obrigatório)"]
+        F2["Descrição (opcional, textarea)"]
+        F3["Botão Criar Projeto"]
+        F4["Botão Voltar"]
+    end
+
+    style Form fill:#61dafb,color:#333
+    style List fill:#5cb85c,color:#fff
+    style API fill:#4a90d9,color:#fff
+```
+
+**Conceitos introduzidos:**
+- **textarea controlado**: campo de múltiplas linhas vinculado a useState
+- **Callback de sucesso**: onCreated() muda o estado do App para voltar à lista
+- **Token no header**: Authorization Bearer token em toda requisição autenticada
