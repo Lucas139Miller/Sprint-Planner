@@ -77,5 +77,31 @@ db.exec(`
   )
 `);
 
+// Tabela de histórias de usuário (user stories) - itens do backlog
+// - title: título da história (ex: "Como usuário, quero fazer login...")
+// - description: detalhes da história
+// - acceptance_criteria: critérios para considerar a história concluída
+// - story_points: estimativa de complexidade (1, 2, 3, 5, 8, 13...)
+// - label: categoria (feature, bug, tech_debt)
+// - priority: ordem no backlog (menor = mais prioritário)
+// - status: estado no kanban (to_do, in_progress, in_review, done)
+// - sprint_id: NULL = está no backlog, número = está em um sprint
+db.exec(`
+  CREATE TABLE IF NOT EXISTS user_stories (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id INTEGER NOT NULL,
+    title TEXT NOT NULL,
+    description TEXT,
+    acceptance_criteria TEXT,
+    story_points INTEGER DEFAULT 0,
+    label TEXT DEFAULT 'feature' CHECK(label IN ('feature', 'bug', 'tech_debt')),
+    priority INTEGER DEFAULT 0,
+    status TEXT DEFAULT 'to_do' CHECK(status IN ('to_do', 'in_progress', 'in_review', 'done')),
+    sprint_id INTEGER,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (project_id) REFERENCES projects(id)
+  )
+`);
+
 // Exporta a conexão do banco para ser usada em outros arquivos
 module.exports = db;

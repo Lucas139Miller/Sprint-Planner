@@ -795,3 +795,34 @@ journey
       Bob aparece em members: 5: Alice, Bob
       Projeto aparece pra Bob: 5: Bob
 ```
+
+---
+
+## Commit 20 — Adiciona tabela user_stories para backlog (US3)
+
+**O que foi feito:** Criou a tabela `user_stories` que armazena as histórias de usuário do backlog. Suporta também sprint_id (US5) e status (US6) para uso futuro.
+
+**Arquivos modificados:** `backend/src/database.js`
+
+```mermaid
+erDiagram
+    projects ||--o{ user_stories : "contém"
+    user_stories {
+        int id PK
+        int project_id FK
+        string title "Como X, quero Y..."
+        string description
+        string acceptance_criteria
+        int story_points "1, 2, 3, 5, 8, 13"
+        string label "feature|bug|tech_debt"
+        int priority "ordem no backlog"
+        string status "to_do|in_progress|in_review|done"
+        int sprint_id "NULL = backlog"
+        datetime created_at
+    }
+```
+
+**Conceitos introduzidos:**
+- **CHECK constraints**: garante valores válidos para label e status
+- **sprint_id NULLable**: NULL significa "ainda no backlog", preenchido = está em sprint
+- **priority**: campo numérico para drag & drop reordenar (US3 final)
