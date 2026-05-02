@@ -74,4 +74,49 @@ router.get('/projects/:projectId/stories', (req, res) => {
   res.json(stories);
 });
 
+// Helper: busca uma história + valida que o usuário é membro do projeto dela
+// Retorna { story, error } - se error existe, deve responder com error
+function getStoryAndCheckAccess(storyId, userId) {
+  const story = db.prepare('SELECT * FROM user_stories WHERE id = ?').get(storyId);
+  if (!story) return { error: { status: 404, message: 'História não encontrada' } };
+  if (!isMember(story.project_id, userId)) {
+    return { error: { status: 403, message: 'Você não é membro deste projeto' } };
+  }
+  return { story };
+}
+
+// PUT /api/stories/:id - Atualiza uma história existente
+// Aceita campos parciais (só atualiza o que for enviado)
+router.put('/stories/:id', (req, res) => {
+  const { story, error } = getStoryAndCheckAccess(req.params.id, req.user.id);
+  if (error) return res.status(error.status).json({ error: error.message });
+
+  const { title, description, acceptance_criteria, story_points, label } = req.body;
+
+  // COALESCE no SQL: usa o novo valor se enviado, senão mantém o antigo
+  // Permite atualização parcial sem precisar enviar todos os campos
+  db.prepare(`
+    UPDATE user_stories SET
+      title = COALESCE(?, title),
+      description = COALESCE(?, description),
+      acceptance_criteria = COALESCE(?, acceptance_criteria),
+      story_points = COALESCE(?, story_points),
+      label = COALESCE(?, label)
+    WHERE id = ?
+  `).run(title, description, acceptance_criteria, story_points, label, story.id);
+
+  // Retorna a história atualizada
+  const updated = db.prepare('SELECT * FROM user_stories WHERE id = ?').get(story.id);
+  res.json(updated);
+});
+
+// DELETE /api/stories/:id - Remove uma história
+router.delete('/stories/:id', (req, res) => {
+  const { story, error } = getStoryAndCheckAccess(req.params.id, req.user.id);
+  if (error) return res.status(error.status).json({ error: error.message });
+
+  db.prepare('DELETE FROM user_stories WHERE id = ?').run(story.id);
+  res.json({ success: true });
+});
+
 module.exports = router;

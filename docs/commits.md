@@ -862,3 +862,41 @@ graph TB
 - **Auto-priority**: priority = MAX+1 garante ordem cronológica de adição
 - **Filtro condicional via query**: `?include=all` muda comportamento sem criar nova rota
 - **Mount em /api**: necessário porque a URL é `/api/projects/:id/stories` (aninhada)
+
+---
+
+## Commit 22 — Adiciona rotas PUT e DELETE de histórias
+
+**O que foi feito:** Adicionou `PUT /api/stories/:id` (atualização parcial via COALESCE) e `DELETE /api/stories/:id`. Helper `getStoryAndCheckAccess` valida existência da história e acesso do usuário.
+
+**Arquivos modificados:** `backend/src/routes/stories.js`
+
+```mermaid
+graph TB
+    subgraph Helper["getStoryAndCheckAccess(id, userId)"]
+        H1["SELECT story WHERE id = ?"]
+        H1 --> H2{"Existe?"}
+        H2 -->|"Não"| E1["404 Não encontrada"]
+        H2 -->|"Sim"| H3{"User é membro<br/>do projeto?"}
+        H3 -->|"Não"| E2["403 Sem acesso"]
+        H3 -->|"Sim"| OK["✓ Retorna { story }"]
+    end
+
+    PUT["PUT /api/stories/:id"] --> Helper
+    DELETE["DELETE /api/stories/:id"] --> Helper
+
+    PUT -->|"OK"| Update["UPDATE com COALESCE<br/>(atualização parcial)"]
+    DELETE -->|"OK"| Del["DELETE FROM user_stories"]
+
+    Update --> Return["Retorna história atualizada"]
+    Del --> Success["{ success: true }"]
+
+    style E1 fill:#f0ad4e,color:#fff
+    style E2 fill:#d9534f,color:#fff
+    style OK fill:#5cb85c,color:#fff
+```
+
+**Conceitos introduzidos:**
+- **COALESCE em UPDATE**: `SET col = COALESCE(?, col)` mantém valor antigo se NULL enviado
+- **PATCH semântico via PUT**: aceita campos parciais sem precisar enviar tudo
+- **DRY com helper**: lógica de validação extraída em função reutilizável
