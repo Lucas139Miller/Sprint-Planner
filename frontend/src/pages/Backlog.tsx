@@ -12,9 +12,11 @@ interface Story {
   priority: number
   status: string
   sprint_id: number | null
+  assignee_id: number | null
 }
 
 interface SprintMini { id: number; name: string; status: string }
+interface Member { id: number; username: string; email: string }
 
 interface BacklogProps {
   token: string
@@ -26,40 +28,30 @@ interface BacklogProps {
 export default function Backlog({ token, projectId, onBack, embedded }: BacklogProps) {
   const [stories, setStories] = useState<Story[]>([])
   const [sprints, setSprints] = useState<SprintMini[]>([])
+  const [members, setMembers] = useState<Member[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [showAi, setShowAi] = useState(false)
   const [editingStory, setEditingStory] = useState<Story | null>(null)
   const [viewAll, setViewAll] = useState(false)
-  // ID da história cujo dropdown "Mover para sprint" está aberto. null = nenhum.
-  const [moveMenuFor, setMoveMenuFor] = useState<number | null>(null)
 
-  // Fecha o dropdown ao clicar fora dele - listener global no document.
-  // Usa data-attribute para distinguir clicks "dentro do menu" do resto.
-  useEffect(() => {
-    if (moveMenuFor === null) return
-    const handler = (e: MouseEvent) => {
-      const target = e.target as HTMLElement
-      if (!target.closest('[data-move-menu]')) setMoveMenuFor(null)
-    }
-    document.addEventListener('click', handler)
-    return () => document.removeEventListener('click', handler)
-  }, [moveMenuFor])
-
+  // Carrega histórias, sprints e membros em paralelo (3 requests).
+  // Membros são necessários para o seletor de responsável em cada card.
   async function refresh() {
     setLoading(true); setError('')
     try {
       const storiesPath = viewAll
         ? `/api/projects/${projectId}/stories?include=all`
         : `/api/projects/${projectId}/stories`
-      const [storiesData, sprintsData] = await Promise.all([
+      const [storiesData, sprintsData, membersData] = await Promise.all([
         apiFetch<Story[]>(storiesPath),
         apiFetch<SprintMini[]>(`/api/projects/${projectId}/sprints`),
+        apiFetch<Member[]>(`/api/projects/${projectId}/members`),
       ])
-      setStories(storiesData); setSprints(sprintsData)
+      setStories(storiesData); setSprints(sprintsData); setMembers(membersData)
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Erro ao carregar histórias')
+      setError(err instanceof ApiError ? err.message : 'Erro ao carregar dados')
     } finally {
       setLoading(false)
     }
@@ -67,9 +59,9 @@ export default function Backlog({ token, projectId, onBack, embedded }: BacklogP
 
   useEffect(() => { refresh() }, [projectId, token, viewAll])
 
-  // Move uma história para um sprint específico ou de volta ao backlog (null)
+  // Move uma história para um sprint específico (ou null = backlog).
+  // Usa endpoint dedicado /move-to-sprint que valida cross-project IDOR.
   async function moveToSprint(storyId: number, sprintId: number | null) {
-    setMoveMenuFor(null)   // Fecha o dropdown imediatamente para feedback visual
     try {
       await apiFetch(`/api/stories/${storyId}/move-to-sprint`, {
         method: 'PUT', body: JSON.stringify({ sprint_id: sprintId }),
@@ -80,9 +72,18 @@ export default function Backlog({ token, projectId, onBack, embedded }: BacklogP
     }
   }
 
-  // Sprints disponíveis como destino (planning + active; sem completed)
-  // Sprints concluídos não aceitam novas histórias - regra Scrum
-  const availableSprints = sprints.filter(s => s.status !== 'completed')
+  // Atribui ou remove o responsável da história. null = sem responsável.
+  // Backend valida que o assignee é membro do projeto.
+  async function assignMember(storyId: number, assigneeId: number | null) {
+    try {
+      await apiFetch(`/api/stories/${storyId}`, {
+        method: 'PUT', body: JSON.stringify({ assignee_id: assigneeId }),
+      })
+      refresh()
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Erro ao atribuir responsável')
+    }
+  }
 
   async function handleDelete(id: number) {
     if (!confirm('Tem certeza que deseja remover esta história?')) return
@@ -94,7 +95,9 @@ export default function Backlog({ token, projectId, onBack, embedded }: BacklogP
     }
   }
 
-  // Total de pontos no backlog (sem sprint) - útil para PO planejar
+  // Sprints disponíveis = planning + active (sprints completed não aceitam histórias)
+  const availableSprints = sprints.filter(s => s.status !== 'completed')
+
   const backlogPoints = stories.filter(s => !s.sprint_id).reduce((sum, s) => sum + (s.story_points || 0), 0)
 
   const labelColors: Record<string, string> = {
@@ -106,9 +109,7 @@ export default function Backlog({ token, projectId, onBack, embedded }: BacklogP
   return (
     <div className="p-6 max-w-5xl mx-auto">
       {!embedded && (
-        <button onClick={onBack} className="text-blue-600 hover:underline mb-4">
-          ← Voltar
-        </button>
+        <button onClick={onBack} className="text-blue-600 hover:underline mb-4">← Voltar</button>
       )}
 
       <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
@@ -119,7 +120,6 @@ export default function Backlog({ token, projectId, onBack, embedded }: BacklogP
           </p>
         </div>
         <div className="flex gap-2 items-center">
-          {/* Toggle: ver só backlog vs ver todas (inclui histórias em sprints) */}
           <label className="text-sm text-gray-600 flex items-center gap-1 cursor-pointer">
             <input type="checkbox" checked={viewAll} onChange={e => setViewAll(e.target.checked)} />
             Mostrar histórias em sprints
@@ -135,7 +135,7 @@ export default function Backlog({ token, projectId, onBack, embedded }: BacklogP
         </div>
       </div>
 
-      {loading && <p className="text-gray-500 text-center py-8">Carregando histórias...</p>}
+      {loading && <p className="text-gray-500 text-center py-8">Carregando...</p>}
       {error && <p className="text-red-500 text-center py-8">{error}</p>}
       {!loading && !error && stories.length === 0 && !showForm && (
         <div className="text-center py-12 bg-white rounded-lg border-2 border-dashed border-gray-200">
@@ -151,57 +151,47 @@ export default function Backlog({ token, projectId, onBack, embedded }: BacklogP
         {stories.map(story => (
           <div key={story.id}
             className={`bg-white p-3 rounded-lg shadow-sm border hover:shadow-md transition-shadow ${
-              story.sprint_id ? 'border-gray-200 opacity-70' : 'border-gray-200'
+              story.sprint_id ? 'border-gray-200 opacity-90' : 'border-gray-200'
             }`}>
-            <div className="flex justify-between items-center gap-3">
+            <div className="flex justify-between items-center gap-3 flex-wrap">
               <div className="flex items-center gap-2 flex-1 min-w-0">
                 <span className={`text-xs px-2 py-0.5 rounded ${labelColors[story.label] || 'bg-gray-100 text-gray-700'} flex-shrink-0`}>
                   {story.label}
                 </span>
                 <span className="text-xs text-gray-400 flex-shrink-0">#{story.id}</span>
                 <h3 className="font-medium text-gray-800 text-sm truncate">{story.title}</h3>
-                {story.sprint_id && (
-                  <span className="text-xs text-blue-600 flex-shrink-0">🏃 sprint</span>
-                )}
               </div>
-              <div className="flex items-center gap-2 flex-shrink-0">
+
+              <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
                 <span className="bg-gray-100 px-2 py-0.5 rounded text-xs font-medium text-gray-700">
                   {story.story_points} pts
                 </span>
-                {/* Dropdown de seleção de sprint - permite escolher qualquer sprint
-                    (planning ou active) como destino, em vez de auto-mover pro ativo */}
-                {availableSprints.length > 0 && (
-                  <div className="relative" data-move-menu>
-                    <button onClick={() => setMoveMenuFor(moveMenuFor === story.id ? null : story.id)}
-                      className="text-xs bg-orange-50 text-orange-700 hover:bg-orange-100 px-2 py-1 rounded inline-flex items-center gap-1">
-                      Mover ▾
-                    </button>
-                    {moveMenuFor === story.id && (
-                      <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded shadow-lg z-10 min-w-[200px] py-1">
-                        <div className="px-3 py-1 text-xs text-gray-500 font-medium border-b">Mover para sprint</div>
-                        {availableSprints
-                          .filter(s => s.id !== story.sprint_id)   // não mostra o sprint atual
-                          .map(s => (
-                            <button key={s.id} onClick={() => moveToSprint(story.id, s.id)}
-                              className="block w-full text-left px-3 py-1.5 text-xs hover:bg-blue-50">
-                              {s.status === 'active' ? '▶ ' : '○ '}{s.name}
-                              <span className="text-gray-400 ml-1">({s.status})</span>
-                            </button>
-                          ))}
-                        {/* Se a história já está em um sprint, oferece voltar ao backlog */}
-                        {story.sprint_id && (
-                          <>
-                            <div className="border-t my-1" />
-                            <button onClick={() => moveToSprint(story.id, null)}
-                              className="block w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 text-gray-700">
-                              ← Voltar ao backlog
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
+
+                {/* Seletor de Sprint - select nativo confiável (substitui dropdown custom)
+                    value vazio = backlog (sprint_id = null) */}
+                <select value={story.sprint_id || ''}
+                  onChange={e => moveToSprint(story.id, e.target.value ? Number(e.target.value) : null)}
+                  className="text-xs border border-gray-300 rounded px-2 py-1 bg-white focus:outline-blue-500 cursor-pointer hover:border-blue-400"
+                  title="Mover para sprint">
+                  <option value="">📋 Backlog</option>
+                  {availableSprints.map(s => (
+                    <option key={s.id} value={s.id}>
+                      🏃 {s.name} {s.status === 'active' ? '(ativo)' : ''}
+                    </option>
+                  ))}
+                </select>
+
+                {/* Seletor de Responsável - mostra todos os membros do projeto */}
+                <select value={story.assignee_id || ''}
+                  onChange={e => assignMember(story.id, e.target.value ? Number(e.target.value) : null)}
+                  className="text-xs border border-gray-300 rounded px-2 py-1 bg-white focus:outline-blue-500 cursor-pointer hover:border-blue-400"
+                  title="Atribuir responsável">
+                  <option value="">👤 Sem responsável</option>
+                  {members.map(m => (
+                    <option key={m.id} value={m.id}>👤 {m.username}</option>
+                  ))}
+                </select>
+
                 <button onClick={() => { setEditingStory(story); setShowForm(true) }}
                   className="text-blue-600 hover:underline text-xs">Editar</button>
                 <button onClick={() => handleDelete(story.id)}

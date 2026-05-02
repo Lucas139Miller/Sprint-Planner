@@ -69,11 +69,21 @@ router.put('/stories/:id', async (req, res) => {
   const { story, error: errAccess } = await getStoryAndCheckAccess(req.params.id, req.user.id);
   if (errAccess) return res.status(errAccess.status).json({ error: errAccess.message });
 
-  // Monta objeto só com campos definidos (undefined some no spread)
+  // Monta objeto só com campos definidos (undefined some no spread).
+  // assignee_id incluído aqui pra permitir atribuir membro a partir do Backlog.
+  // null é valor válido (= remover responsável).
   const updates = {};
-  ['title', 'description', 'acceptance_criteria', 'story_points', 'label'].forEach(k => {
+  ['title', 'description', 'acceptance_criteria', 'story_points', 'label', 'assignee_id'].forEach(k => {
     if (req.body[k] !== undefined) updates[k] = req.body[k];
   });
+
+  // Se está atribuindo a alguém (não null), valida que essa pessoa é membro do projeto
+  // Evita atribuir tarefa para um random user_id qualquer (IDOR de assignee)
+  if (updates.assignee_id !== undefined && updates.assignee_id !== null) {
+    if (!(await isMember(story.project_id, updates.assignee_id))) {
+      return res.status(400).json({ error: 'Usuário não é membro deste projeto' });
+    }
+  }
 
   const { data: updated } = await supabase
     .from('sp_user_stories').update(updates).eq('id', story.id).select().single();
