@@ -759,3 +759,39 @@ graph TB
 - **Cleanup do useEffect**: `return () => clearInterval()` evita memory leak
 - **Badge condicional**: número só aparece se houver convites (pendingInvites > 0)
 - **Dropdown absoluto**: posição `absolute` para flutuar sobre o conteúdo
+
+---
+
+## Commit 19 — Ajusta mensagem de convite + atualiza CLAUDE.md
+
+**O que foi feito:** Mudou a mensagem de sucesso em ProjectDetail para refletir que o convite agora é pendente (não direto). Adicionou os 3 endpoints de invitations na tabela do CLAUDE.md.
+
+**Arquivos modificados:** `frontend/src/pages/ProjectDetail.tsx`, `CLAUDE.md`
+
+```mermaid
+graph LR
+    Owner["Dono"] -->|"Convidar Bob"| Form["Formulário"]
+    Form -->|"POST /projects/:id/members"| API["Backend"]
+    API -->|"INSERT invitations<br/>status=pending"| DB[(SQLite)]
+    API -->|"201"| Form
+    Form -->|"Mensagem"| Msg["✅ Convite enviado para bob como Dev<br/>Aguardando aceitação."]
+
+    style Msg fill:#d4edda,stroke:#5cb85c,color:#000
+```
+
+**Fluxo completo do sistema de convites:**
+```mermaid
+journey
+    title Jornada de um Convite
+    section Dono (Alice)
+      Cria projeto: 5: Alice
+      Vai em ProjectDetail: 5: Alice
+      Convida Bob como Dev: 4: Alice
+    section Convidado (Bob)
+      Vê badge no sino 🔔: 5: Bob
+      Abre painel de convites: 5: Bob
+      Aceita o convite: 5: Bob
+    section Após aceitação
+      Bob aparece em members: 5: Alice, Bob
+      Projeto aparece pra Bob: 5: Bob
+```

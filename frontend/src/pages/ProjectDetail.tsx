@@ -50,9 +50,10 @@ export default function ProjectDetail({ token, projectId, onBack }: ProjectDetai
     const data = await res.json()
     if (!res.ok) return setError(data.error)
 
-    setSuccess(`${data.username} adicionado como ${data.role}`)
+    // Agora o convite fica pendente até o convidado aceitar
+    const inviteeName = data.invitee?.username || identifier
+    setSuccess(`Convite enviado para ${inviteeName} como ${data.role}. Aguardando aceitação.`)
     setIdentifier('')
-    fetchMembers()   // Atualiza lista de membros
   }
 
   // Cores dos badges por papel Scrum

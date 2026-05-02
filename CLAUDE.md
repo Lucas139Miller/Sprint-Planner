@@ -82,8 +82,11 @@ sprint-planner/
 | POST | `/api/auth/login` | Login | `{ email, password }` | Não |
 | POST | `/api/projects` | Criar projeto | `{ name, description }` | JWT |
 | GET | `/api/projects` | Listar projetos do usuário | - | JWT |
-| POST | `/api/projects/:id/members` | Convidar membro | `{ identifier, role }` | JWT (owner) |
+| POST | `/api/projects/:id/members` | Convidar membro (cria invitation pendente) | `{ identifier, role }` | JWT (owner) |
 | GET | `/api/projects/:id/members` | Listar membros | - | JWT (membro) |
+| GET | `/api/invitations` | Listar convites pendentes do usuário | - | JWT |
+| POST | `/api/invitations/:id/accept` | Aceitar convite (vira membro) | - | JWT (invitee) |
+| POST | `/api/invitations/:id/reject` | Rejeitar convite | - | JWT (invitee) |
 
 ## Histórias de Usuário (Roadmap)
 
