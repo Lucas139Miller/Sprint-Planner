@@ -2,11 +2,16 @@ import { useState, useEffect } from 'react'
 import { apiFetch, ApiError } from '../api'
 import StoryForm from './StoryForm'
 import AiGenerateModal from './AiGenerateModal'
+import Avatar from '../components/Avatar'
+import ConfirmModal from '../components/ConfirmModal'
+import { SkeletonList } from '../components/Skeleton'
+import StoryDetailPanel from '../components/StoryDetailPanel'
 
 interface Story {
   id: number
   title: string
   description: string
+  acceptance_criteria: string
   story_points: number
   label: string
   priority: number
@@ -35,9 +40,11 @@ export default function Backlog({ token, projectId, onBack, embedded }: BacklogP
   const [showAi, setShowAi] = useState(false)
   const [editingStory, setEditingStory] = useState<Story | null>(null)
   const [viewAll, setViewAll] = useState(false)
+  // Painel slide-out: history selecionada para detail panel
+  const [detailStory, setDetailStory] = useState<Story | null>(null)
+  // Confirmação de delete: id pendente (null = modal fechado)
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null)
 
-  // Carrega histórias, sprints e membros em paralelo (3 requests).
-  // Membros são necessários para o seletor de responsável em cada card.
   async function refresh() {
     setLoading(true); setError('')
     try {
@@ -50,6 +57,11 @@ export default function Backlog({ token, projectId, onBack, embedded }: BacklogP
         apiFetch<Member[]>(`/api/projects/${projectId}/members`),
       ])
       setStories(storiesData); setSprints(sprintsData); setMembers(membersData)
+      // Atualiza detail panel se aberto - garante que reflita mudanças externas
+      if (detailStory) {
+        const updated = storiesData.find(s => s.id === detailStory.id)
+        if (updated) setDetailStory(updated)
+      }
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Erro ao carregar dados')
     } finally {
@@ -59,8 +71,6 @@ export default function Backlog({ token, projectId, onBack, embedded }: BacklogP
 
   useEffect(() => { refresh() }, [projectId, token, viewAll])
 
-  // Move uma história para um sprint específico (ou null = backlog).
-  // Usa endpoint dedicado /move-to-sprint que valida cross-project IDOR.
   async function moveToSprint(storyId: number, sprintId: number | null) {
     try {
       await apiFetch(`/api/stories/${storyId}/move-to-sprint`, {
@@ -72,8 +82,6 @@ export default function Backlog({ token, projectId, onBack, embedded }: BacklogP
     }
   }
 
-  // Atribui ou remove o responsável da história. null = sem responsável.
-  // Backend valida que o assignee é membro do projeto.
   async function assignMember(storyId: number, assigneeId: number | null) {
     try {
       await apiFetch(`/api/stories/${storyId}`, {
@@ -85,19 +93,18 @@ export default function Backlog({ token, projectId, onBack, embedded }: BacklogP
     }
   }
 
-  async function handleDelete(id: number) {
-    if (!confirm('Tem certeza que deseja remover esta história?')) return
+  async function doDelete(id: number) {
+    setConfirmDeleteId(null)
     try {
       await apiFetch(`/api/stories/${id}`, { method: 'DELETE' })
+      if (detailStory?.id === id) setDetailStory(null)
       refresh()
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Erro ao remover')
     }
   }
 
-  // Sprints disponíveis = planning + active (sprints completed não aceitam histórias)
   const availableSprints = sprints.filter(s => s.status !== 'completed')
-
   const backlogPoints = stories.filter(s => !s.sprint_id).reduce((sum, s) => sum + (s.story_points || 0), 0)
 
   const labelColors: Record<string, string> = {
@@ -105,6 +112,8 @@ export default function Backlog({ token, projectId, onBack, embedded }: BacklogP
     'bug': 'bg-red-100 text-red-700',
     'tech_debt': 'bg-yellow-100 text-yellow-700',
   }
+
+  const storyToDelete = stories.find(s => s.id === confirmDeleteId)
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
@@ -119,7 +128,7 @@ export default function Backlog({ token, projectId, onBack, embedded }: BacklogP
             {stories.filter(s => !s.sprint_id).length} histórias · {backlogPoints} pontos
           </p>
         </div>
-        <div className="flex gap-2 items-center">
+        <div className="flex gap-2 items-center flex-wrap">
           <label className="text-sm text-gray-600 flex items-center gap-1 cursor-pointer">
             <input type="checkbox" checked={viewAll} onChange={e => setViewAll(e.target.checked)} />
             Mostrar histórias em sprints
@@ -135,8 +144,10 @@ export default function Backlog({ token, projectId, onBack, embedded }: BacklogP
         </div>
       </div>
 
-      {loading && <p className="text-gray-500 text-center py-8">Carregando...</p>}
-      {error && <p className="text-red-500 text-center py-8">{error}</p>}
+      {/* Skeleton loaders enquanto carrega - melhor que texto "Carregando..." */}
+      {loading && <SkeletonList count={4} />}
+
+      {error && <p className="text-red-500 text-center py-4 bg-red-50 rounded">{error}</p>}
       {!loading && !error && stories.length === 0 && !showForm && (
         <div className="text-center py-12 bg-white rounded-lg border-2 border-dashed border-gray-200">
           <p className="text-gray-500 mb-3">Nenhuma história ainda.</p>
@@ -148,58 +159,60 @@ export default function Backlog({ token, projectId, onBack, embedded }: BacklogP
       )}
 
       <div className="space-y-2">
-        {stories.map(story => (
-          <div key={story.id}
-            className={`bg-white p-3 rounded-lg shadow-sm border hover:shadow-md transition-shadow ${
-              story.sprint_id ? 'border-gray-200 opacity-90' : 'border-gray-200'
-            }`}>
-            <div className="flex justify-between items-center gap-3 flex-wrap">
-              <div className="flex items-center gap-2 flex-1 min-w-0">
-                <span className={`text-xs px-2 py-0.5 rounded ${labelColors[story.label] || 'bg-gray-100 text-gray-700'} flex-shrink-0`}>
-                  {story.label}
-                </span>
-                <span className="text-xs text-gray-400 flex-shrink-0">#{story.id}</span>
-                <h3 className="font-medium text-gray-800 text-sm truncate">{story.title}</h3>
-              </div>
+        {!loading && stories.map(story => {
+          const assignee = members.find(m => m.id === story.assignee_id)
+          return (
+            <div key={story.id}
+              onClick={() => setDetailStory(story)}
+              className={`bg-white p-3 rounded-lg shadow-sm border cursor-pointer hover:shadow-md hover:border-blue-300 transition-all ${
+                story.sprint_id ? 'border-gray-200 opacity-90' : 'border-gray-200'
+              }`}>
+              <div className="flex justify-between items-center gap-3 flex-wrap">
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <span className={`text-xs px-2 py-0.5 rounded ${labelColors[story.label] || 'bg-gray-100 text-gray-700'} flex-shrink-0`}>
+                    {story.label}
+                  </span>
+                  <span className="text-xs text-gray-400 flex-shrink-0">#{story.id}</span>
+                  <h3 className="font-medium text-gray-800 text-sm truncate">{story.title}</h3>
+                </div>
 
-              <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
-                <span className="bg-gray-100 px-2 py-0.5 rounded text-xs font-medium text-gray-700">
-                  {story.story_points} pts
-                </span>
+                {/* stopPropagation nos selects evita abrir detail panel ao mexer neles */}
+                <div className="flex items-center gap-2 flex-shrink-0 flex-wrap" onClick={e => e.stopPropagation()}>
+                  <span className="bg-gray-100 px-2 py-0.5 rounded text-xs font-medium text-gray-700">
+                    {story.story_points} pts
+                  </span>
 
-                {/* Seletor de Sprint - select nativo confiável (substitui dropdown custom)
-                    value vazio = backlog (sprint_id = null) */}
-                <select value={story.sprint_id || ''}
-                  onChange={e => moveToSprint(story.id, e.target.value ? Number(e.target.value) : null)}
-                  className="text-xs border border-gray-300 rounded px-2 py-1 bg-white focus:outline-blue-500 cursor-pointer hover:border-blue-400"
-                  title="Mover para sprint">
-                  <option value="">📋 Backlog</option>
-                  {availableSprints.map(s => (
-                    <option key={s.id} value={s.id}>
-                      🏃 {s.name} {s.status === 'active' ? '(ativo)' : ''}
-                    </option>
-                  ))}
-                </select>
+                  <select value={story.sprint_id || ''}
+                    onChange={e => moveToSprint(story.id, e.target.value ? Number(e.target.value) : null)}
+                    className="text-xs border border-gray-300 rounded px-2 py-1 bg-white focus:outline-blue-500 cursor-pointer hover:border-blue-400"
+                    title="Mover para sprint">
+                    <option value="">📋 Backlog</option>
+                    {availableSprints.map(s => (
+                      <option key={s.id} value={s.id}>
+                        🏃 {s.name} {s.status === 'active' ? '(ativo)' : ''}
+                      </option>
+                    ))}
+                  </select>
 
-                {/* Seletor de Responsável - mostra todos os membros do projeto */}
-                <select value={story.assignee_id || ''}
-                  onChange={e => assignMember(story.id, e.target.value ? Number(e.target.value) : null)}
-                  className="text-xs border border-gray-300 rounded px-2 py-1 bg-white focus:outline-blue-500 cursor-pointer hover:border-blue-400"
-                  title="Atribuir responsável">
-                  <option value="">👤 Sem responsável</option>
-                  {members.map(m => (
-                    <option key={m.id} value={m.id}>👤 {m.username}</option>
-                  ))}
-                </select>
+                  {/* Avatar + select compacto pro responsável */}
+                  <div className="flex items-center gap-1">
+                    <Avatar username={assignee?.username} size="sm" />
+                    <select value={story.assignee_id || ''}
+                      onChange={e => assignMember(story.id, e.target.value ? Number(e.target.value) : null)}
+                      className="text-xs border border-gray-300 rounded px-2 py-1 bg-white focus:outline-blue-500 cursor-pointer hover:border-blue-400"
+                      title="Atribuir responsável">
+                      <option value="">Sem responsável</option>
+                      {members.map(m => <option key={m.id} value={m.id}>{m.username}</option>)}
+                    </select>
+                  </div>
 
-                <button onClick={() => { setEditingStory(story); setShowForm(true) }}
-                  className="text-blue-600 hover:underline text-xs">Editar</button>
-                <button onClick={() => handleDelete(story.id)}
-                  className="text-red-600 hover:underline text-xs">Remover</button>
+                  <button onClick={() => setConfirmDeleteId(story.id)}
+                    className="text-red-600 hover:underline text-xs">Remover</button>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
 
       {showForm && (
@@ -213,6 +226,25 @@ export default function Backlog({ token, projectId, onBack, embedded }: BacklogP
           onClose={() => setShowAi(false)}
           onCreated={refresh} />
       )}
+
+      {/* Detail panel slide-out à direita */}
+      {detailStory && (
+        <StoryDetailPanel story={detailStory} members={members} sprints={sprints}
+          onClose={() => setDetailStory(null)}
+          onUpdate={refresh}
+          onDelete={(id) => setConfirmDeleteId(id)} />
+      )}
+
+      {/* Modal customizado em vez do confirm() nativo */}
+      <ConfirmModal
+        open={confirmDeleteId !== null}
+        title="Remover história?"
+        message={storyToDelete ? `"${storyToDelete.title}" será removida permanentemente. Esta ação não pode ser desfeita.` : ''}
+        confirmLabel="Remover"
+        variant="danger"
+        onConfirm={() => confirmDeleteId && doDelete(confirmDeleteId)}
+        onCancel={() => setConfirmDeleteId(null)}
+      />
     </div>
   )
 }

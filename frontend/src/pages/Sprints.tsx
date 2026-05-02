@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { apiFetch, ApiError } from '../api'
 import SprintForm from './SprintForm'
 import AiSummaryModal from './AiSummaryModal'
+import ConfirmModal from '../components/ConfirmModal'
+import { SkeletonList } from '../components/Skeleton'
 
 export interface Sprint {
   id: number
@@ -28,8 +30,9 @@ export default function Sprints({ token, projectId, onBack, embedded, onSprintsC
   const [error, setError] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [editingSprint, setEditingSprint] = useState<Sprint | null>(null)
-  // Sprint selecionado para o modal de resumo IA (US9)
   const [aiSprint, setAiSprint] = useState<Sprint | null>(null)
+  // Sprint pendente de exclusão (substitui confirm() nativo)
+  const [confirmDelete, setConfirmDelete] = useState<Sprint | null>(null)
 
   async function fetchSprints() {
     setLoading(true); setError('')
@@ -45,8 +48,10 @@ export default function Sprints({ token, projectId, onBack, embedded, onSprintsC
 
   useEffect(() => { fetchSprints() }, [projectId, token])
 
-  async function handleDelete(id: number) {
-    if (!confirm('Tem certeza que deseja remover este sprint?')) return
+  async function doDelete() {
+    if (!confirmDelete) return
+    const id = confirmDelete.id
+    setConfirmDelete(null)
     try {
       await apiFetch(`/api/sprints/${id}`, { method: 'DELETE' })
       fetchSprints(); onSprintsChanged?.()
@@ -103,7 +108,7 @@ export default function Sprints({ token, projectId, onBack, embedded, onSprintsC
         </button>
       </div>
 
-      {loading && <p className="text-gray-500 text-center py-8">Carregando sprints...</p>}
+      {loading && <SkeletonList count={3} />}
       {error && <p className="text-red-500 text-center py-8">{error}</p>}
       {!loading && !error && sprints.length === 0 && !showForm && (
         <div className="text-center py-12 bg-white rounded-lg border-2 border-dashed border-gray-200">
@@ -156,7 +161,7 @@ export default function Sprints({ token, projectId, onBack, embedded, onSprintsC
                 <div className="flex gap-2 text-xs">
                   <button onClick={() => { setEditingSprint(sprint); setShowForm(true) }}
                     className="text-blue-600 hover:underline">Editar</button>
-                  <button onClick={() => handleDelete(sprint.id)}
+                  <button onClick={() => setConfirmDelete(sprint)}
                     className="text-red-600 hover:underline">Remover</button>
                 </div>
               </div>
@@ -175,6 +180,16 @@ export default function Sprints({ token, projectId, onBack, embedded, onSprintsC
         <AiSummaryModal sprintId={aiSprint.id} sprintName={aiSprint.name}
           onClose={() => setAiSprint(null)} />
       )}
+
+      <ConfirmModal
+        open={confirmDelete !== null}
+        title="Remover sprint?"
+        message={confirmDelete ? `O sprint "${confirmDelete.name}" será removido. As histórias dele voltarão para o backlog.` : ''}
+        confirmLabel="Remover"
+        variant="danger"
+        onConfirm={doDelete}
+        onCancel={() => setConfirmDelete(null)}
+      />
     </div>
   )
 }

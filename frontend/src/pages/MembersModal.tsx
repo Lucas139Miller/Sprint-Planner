@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { apiFetch, ApiError } from '../api'
+import Avatar from '../components/Avatar'
 
 interface Member {
   id: number
@@ -75,9 +76,12 @@ export default function MembersModal({ projectId, onClose }: MembersModalProps) 
         <div className="overflow-y-auto p-4 space-y-2">
           {members.map(m => (
             <div key={m.id} className="flex justify-between items-center p-3 bg-gray-50 rounded">
-              <div>
-                <div className="font-medium text-gray-800 text-sm">{m.username}</div>
-                <div className="text-xs text-gray-500">{m.email}</div>
+              <div className="flex items-center gap-3">
+                <Avatar username={m.username} size="md" />
+                <div>
+                  <div className="font-medium text-gray-800 text-sm">{m.username}</div>
+                  <div className="text-xs text-gray-500">{m.email}</div>
+                </div>
               </div>
               <span className={`text-xs px-2 py-1 rounded-full ${roleColors[m.role] || 'bg-gray-100 text-gray-700'}`}>
                 {m.role}

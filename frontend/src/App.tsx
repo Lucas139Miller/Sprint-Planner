@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { apiFetch } from './api'
+import Avatar from './components/Avatar'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Projects from './pages/Projects'
@@ -112,7 +113,10 @@ function App() {
                 onResponded={() => { refreshPendingCount(); setShowInvitations(false); setPage('projects') }} />
             )}
           </div>
-          <span className="hidden sm:inline text-sm">👤 {user.username}</span>
+          <div className="hidden sm:flex items-center gap-2 text-sm">
+            <Avatar username={user.username} size="sm" />
+            <span>{user.username}</span>
+          </div>
           <button onClick={handleLogout}
             className="bg-blue-900 hover:bg-blue-950 border border-blue-600 px-3 py-1.5 rounded text-sm">
             Sair

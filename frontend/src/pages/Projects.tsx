@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
 import { apiFetch, ApiError } from '../api'
+import ConfirmModal from '../components/ConfirmModal'
+import { SkeletonGrid } from '../components/Skeleton'
 
 interface Project {
   id: number
@@ -20,7 +22,8 @@ export default function Projects({ token, onCreateProject, onSelectProject }: Pr
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  // user.id atual - usado para mostrar botão deletar só nos projetos do dono
+  // Projeto pendente de exclusão (null = modal fechado)
+  const [confirmDelete, setConfirmDelete] = useState<Project | null>(null)
   const currentUserId = JSON.parse(localStorage.getItem('user') || '{}')?.id
 
   function refresh() {
@@ -33,12 +36,12 @@ export default function Projects({ token, onCreateProject, onSelectProject }: Pr
 
   useEffect(() => { refresh() }, [token])
 
-  // Deleta projeto após confirmação. stopPropagation evita disparar onSelectProject do card.
-  async function handleDelete(e: React.MouseEvent, projectId: number, name: string) {
-    e.stopPropagation()
-    if (!confirm(`Excluir o projeto "${name}"? Todas as histórias, sprints e membros serão removidos. Esta ação não pode ser desfeita.`)) return
+  async function doDelete() {
+    if (!confirmDelete) return
+    const id = confirmDelete.id
+    setConfirmDelete(null)
     try {
-      await apiFetch(`/api/projects/${projectId}`, { method: 'DELETE' })
+      await apiFetch(`/api/projects/${id}`, { method: 'DELETE' })
       refresh()
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Erro ao excluir projeto')
@@ -61,7 +64,7 @@ export default function Projects({ token, onCreateProject, onSelectProject }: Pr
         </button>
       </div>
 
-      {loading && <p className="text-gray-500 text-center mt-12">Carregando projetos...</p>}
+      {loading && <SkeletonGrid count={6} />}
       {error && <p className="text-red-500 text-center mt-12">{error}</p>}
       {!loading && !error && projects.length === 0 && (
         <p className="text-gray-500 text-center mt-12">
@@ -77,7 +80,7 @@ export default function Projects({ token, onCreateProject, onSelectProject }: Pr
               className="bg-white p-5 rounded-lg shadow hover:shadow-md cursor-pointer border border-gray-200 transition-shadow group relative">
               {/* Botão deletar - só para o dono. group-hover deixa visível só ao passar o mouse */}
               {isOwner && (
-                <button onClick={e => handleDelete(e, project.id, project.name)}
+                <button onClick={e => { e.stopPropagation(); setConfirmDelete(project) }}
                   title="Excluir projeto"
                   className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-red-50 hover:bg-red-100 text-red-600 w-7 h-7 rounded flex items-center justify-center text-sm">
                   🗑
@@ -97,6 +100,16 @@ export default function Projects({ token, onCreateProject, onSelectProject }: Pr
           )
         })}
       </div>
+
+      <ConfirmModal
+        open={confirmDelete !== null}
+        title="Excluir projeto?"
+        message={confirmDelete ? `"${confirmDelete.name}" e tudo dentro dele (histórias, sprints, membros) serão removidos. Esta ação não pode ser desfeita.` : ''}
+        confirmLabel="Excluir"
+        variant="danger"
+        onConfirm={doDelete}
+        onCancel={() => setConfirmDelete(null)}
+      />
     </div>
   )
 }

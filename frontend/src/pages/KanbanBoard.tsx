@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
 import { apiFetch, ApiError } from '../api'
+import Avatar from '../components/Avatar'
+import { SkeletonCard } from '../components/Skeleton'
 
 interface Story {
   id: number
@@ -58,13 +60,34 @@ export default function KanbanBoard({ sprintId, onBack, embedded }: KanbanBoardP
 
   useEffect(() => { fetchBoard() }, [sprintId])
 
+  // Optimistic update: atualiza UI ANTES da resposta do backend.
+  // Se a API falhar, reverte ao snapshot original e mostra erro.
+  // Resultado: drag & drop sente "instantâneo" mesmo com latência de 500ms.
   async function moveStory(storyId: number, newStatus: string) {
+    const snapshot = board   // backup pra reverter em caso de erro
+    // Encontra e remove a story de qualquer coluna (otimisticamente)
+    const allStories = [...board.to_do, ...board.in_progress, ...board.in_review, ...board.done]
+    const story = allStories.find(s => s.id === storyId)
+    if (!story) return
+
+    const optimistic: Board = {
+      to_do: board.to_do.filter(s => s.id !== storyId),
+      in_progress: board.in_progress.filter(s => s.id !== storyId),
+      in_review: board.in_review.filter(s => s.id !== storyId),
+      done: board.done.filter(s => s.id !== storyId),
+    }
+    optimistic[newStatus as keyof Board] = [...optimistic[newStatus as keyof Board], { ...story, status: newStatus }]
+    setBoard(optimistic)
+    setError('')
+
     try {
       await apiFetch(`/api/stories/${storyId}/status`, {
         method: 'PUT', body: JSON.stringify({ status: newStatus }),
       })
+      // Sincroniza com backend pra pegar dados frescos (caso outro user mudou algo)
       fetchBoard()
     } catch (err) {
+      setBoard(snapshot)   // rollback
       setError(err instanceof ApiError ? err.message : 'Erro ao mover história')
     }
   }
@@ -105,8 +128,10 @@ export default function KanbanBoard({ sprintId, onBack, embedded }: KanbanBoardP
           </span>
         </div>
         <h4 className="font-medium text-gray-800 text-sm mb-2">{story.title}</h4>
-        <div className="text-xs text-gray-500">
-          {story.assignee_username ? `👤 ${story.assignee_username}` : '👤 sem responsável'}
+        <div className="flex items-center gap-1.5 text-xs text-gray-500">
+          <Avatar username={story.assignee_username} size="xs"
+            title={story.assignee_username || 'Sem responsável'} />
+          <span className="truncate">{story.assignee_username || 'Sem responsável'}</span>
         </div>
       </div>
     )
@@ -124,8 +149,17 @@ export default function KanbanBoard({ sprintId, onBack, embedded }: KanbanBoardP
         </h2>
       )}
 
-      {loading && <p className="text-gray-500 text-center py-8">Carregando board...</p>}
-      {error && <p className="text-red-500 text-center py-8">{error}</p>}
+      {/* Skeleton com 4 colunas + 2 cards cada (mimetiza estrutura do board real) */}
+      {loading && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className="bg-gray-100 rounded-lg p-3 space-y-2">
+              <SkeletonCard /><SkeletonCard />
+            </div>
+          ))}
+        </div>
+      )}
+      {error && <p className="text-red-500 text-center py-4 bg-red-50 rounded">{error}</p>}
 
       {!loading && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
