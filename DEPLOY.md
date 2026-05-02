@@ -1,5 +1,27 @@
 # Deploy na Vercel
 
+## ⚡ Auto-deploy a cada `git push`
+
+O repo tem um hook git em `.githooks/pre-push` que **dispara deploy de produção na Vercel toda vez que você dá `git push`**. Se o deploy falhar, o push é cancelado.
+
+### Setup (1x após clone)
+```bash
+bash scripts/setup.sh
+```
+
+Ou manual:
+```bash
+git config core.hooksPath .githooks
+```
+
+### Pular deploy num push específico
+```bash
+git push --no-verify
+```
+
+---
+
+
 ## Arquitetura
 - **Frontend**: build estático do Vite servido pela CDN da Vercel
 - **Backend**: Express convertido em **serverless function** (`api/index.js`)
