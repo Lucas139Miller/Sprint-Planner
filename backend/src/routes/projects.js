@@ -29,10 +29,17 @@ router.post('/', async (req, res) => {
 
   if (error) return res.status(500).json({ error: 'Erro ao criar projeto' });
 
-  // Insere o criador como PO automaticamente
-  await supabase.from('sp_project_members').insert({
+  // Insere o criador como PO. Se falhar, deleta o projeto para evitar projetos
+  // órfãos (sem dono na tabela de membros). Sem transação no Supabase, fazemos
+  // rollback manual.
+  const { error: memberError } = await supabase.from('sp_project_members').insert({
     project_id: project.id, user_id: req.user.id, role: 'PO',
   });
+
+  if (memberError) {
+    await supabase.from('sp_projects').delete().eq('id', project.id);
+    return res.status(500).json({ error: 'Erro ao criar projeto (membership falhou)' });
+  }
 
   res.status(201).json({ ...project, role: 'PO' });
 });
@@ -70,9 +77,15 @@ router.post('/:id/members', async (req, res) => {
     .from('sp_projects').select('*').eq('id', projectId).eq('owner_id', req.user.id).maybeSingle();
   if (!project) return res.status(403).json({ error: 'Apenas o dono do projeto pode convidar membros' });
 
-  // Busca usuário por email OU username
-  const { data: invitedUser } = await supabase
-    .from('sp_users').select('*').or(`email.eq.${identifier},username.eq.${identifier}`).maybeSingle();
+  // Busca por email primeiro; se não achar, tenta username.
+  // Evita injection na string do .or() do PostgREST se identifier tiver vírgula/parênteses.
+  let { data: invitedUser } = await supabase
+    .from('sp_users').select('*').eq('email', identifier).maybeSingle();
+  if (!invitedUser) {
+    const { data } = await supabase
+      .from('sp_users').select('*').eq('username', identifier).maybeSingle();
+    invitedUser = data;
+  }
   if (!invitedUser) return res.status(404).json({ error: 'Usuário não encontrado' });
 
   if (invitedUser.id === req.user.id) {

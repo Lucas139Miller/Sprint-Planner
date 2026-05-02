@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
+import { apiFetch } from '../api'
 
-// Tipo do convite recebido (com dados do projeto e do convidador)
 interface Invitation {
   id: number
   role: string
@@ -13,35 +13,35 @@ interface Invitation {
 
 interface InvitationsPanelProps {
   token: string
-  onResponded: () => void   // Callback quando aceita ou rejeita (atualiza badge)
+  onResponded: () => void
 }
 
 export default function InvitationsPanel({ token, onResponded }: InvitationsPanelProps) {
   const [invitations, setInvitations] = useState<Invitation[]>([])
 
-  // Busca convites pendentes
-  function fetchInvitations() {
-    fetch('http://localhost:3001/api/invitations', {
-      headers: { 'Authorization': `Bearer ${token}` },
-    })
-      .then(res => res.json())
-      .then(data => { if (Array.isArray(data)) setInvitations(data) })
+  async function fetchInvitations() {
+    try {
+      const data = await apiFetch<Invitation[]>('/api/invitations')
+      setInvitations(data)
+    } catch {
+      // Silencia erros - sino é um indicador secundário, não pode quebrar a UI
+    }
   }
 
   useEffect(() => { fetchInvitations() }, [token])
 
-  // Aceita ou rejeita - usa a mesma função com endpoint diferente
   async function respond(id: number, action: 'accept' | 'reject') {
-    await fetch(`http://localhost:3001/api/invitations/${id}/${action}`, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${token}` },
-    })
-    fetchInvitations()  // Atualiza a lista local
-    onResponded()       // Avisa o pai (App) para atualizar o badge do sino
+    try {
+      await apiFetch(`/api/invitations/${id}/${action}`, { method: 'POST' })
+      fetchInvitations()
+      onResponded()
+    } catch {
+      // Silencia - se a requisição falhou, o convite continua na lista
+    }
   }
 
   return (
-    <div className="absolute right-0 top-12 bg-white rounded-lg shadow-lg border w-96 z-10 max-h-96 overflow-y-auto">
+    <div className="absolute right-0 top-12 bg-white rounded-lg shadow-lg border w-96 z-30 max-h-96 overflow-y-auto">
       <div className="p-4 border-b font-semibold text-gray-800">
         Convites Pendentes ({invitations.length})
       </div>

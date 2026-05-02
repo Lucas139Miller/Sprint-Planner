@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
+import { apiFetch, ApiError } from '../api'
 import StoryForm from './StoryForm'
 
-// Tipo de uma história de usuário do backlog
 interface Story {
   id: number
   title: string
@@ -12,47 +12,62 @@ interface Story {
   status: string
 }
 
+interface Sprint {
+  id: number
+  name: string
+  status: string
+}
+
 interface BacklogProps {
   token: string
   projectId: number
   onBack: () => void
-  // onOpenDashboard é opcional: abre o Dashboard de um sprint para teste rápido
+  // Callbacks recebem o sprintId real (descoberto via API), não mais hardcoded
   onOpenDashboard?: (sprintId: number) => void
-  // onOpenKanban (US6): abre o Kanban Board de um sprint para teste rápido
-  // Opcional para evitar quebrar callers antigos que não passam o callback
   onOpenKanban?: (sprintId: number) => void
-  // onOpenSprintBoard (US5): abre o SprintBoard para mover histórias entre
-  // backlog ↔ sprint. Opcional pelo mesmo motivo dos demais callbacks.
   onOpenSprintBoard?: (sprintId: number) => void
 }
 
 export default function Backlog({ token, projectId, onBack, onOpenDashboard, onOpenKanban, onOpenSprintBoard }: BacklogProps) {
   const [stories, setStories] = useState<Story[]>([])
+  const [sprints, setSprints] = useState<Sprint[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [editingStory, setEditingStory] = useState<Story | null>(null)
 
-  // Busca histórias do backlog ao carregar
-  function fetchStories() {
-    fetch(`http://localhost:3001/api/projects/${projectId}/stories`, {
-      headers: { 'Authorization': `Bearer ${token}` },
-    })
-      .then(res => res.json())
-      .then(data => { if (Array.isArray(data)) setStories(data) })
+  // Busca histórias e sprints em paralelo. Sprints serve para os botões
+  // saberem qual sprintId real usar (em vez do hardcoded 1).
+  async function refresh() {
+    setLoading(true); setError('')
+    try {
+      const [storiesData, sprintsData] = await Promise.all([
+        apiFetch<Story[]>(`/api/projects/${projectId}/stories`),
+        apiFetch<Sprint[]>(`/api/projects/${projectId}/sprints`),
+      ])
+      setStories(storiesData); setSprints(sprintsData)
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Erro ao carregar dados')
+    } finally {
+      setLoading(false)
+    }
   }
 
-  useEffect(() => { fetchStories() }, [projectId, token])
+  useEffect(() => { refresh() }, [projectId, token])
 
-  // Remove história após confirmação
   async function handleDelete(id: number) {
     if (!confirm('Tem certeza que deseja remover esta história?')) return
-    await fetch(`http://localhost:3001/api/stories/${id}`, {
-      method: 'DELETE',
-      headers: { 'Authorization': `Bearer ${token}` },
-    })
-    fetchStories()
+    try {
+      await apiFetch(`/api/stories/${id}`, { method: 'DELETE' })
+      refresh()
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Erro ao remover história')
+    }
   }
 
-  // Cores diferentes por categoria de história
+  // Sprint ativo (active) ou primeiro disponível, usado para os botões de ação rápida
+  const activeSprint = sprints.find(s => s.status === 'active') || sprints[0]
+
   const labelColors: Record<string, string> = {
     'feature': 'bg-blue-100 text-blue-700',
     'bug': 'bg-red-100 text-red-700',
@@ -65,32 +80,26 @@ export default function Backlog({ token, projectId, onBack, onOpenDashboard, onO
         ← Voltar aos projetos
       </button>
 
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-center mb-6 flex-wrap gap-2">
         <h2 className="text-2xl font-bold text-gray-800">Backlog</h2>
-        <div className="flex gap-2">
-          {/* Botão temporário: abre o Dashboard do sprint #1 para testar US7
-              (mais tarde será substituído por seleção real de sprint na UI) */}
-          {onOpenDashboard && (
-            <button onClick={() => onOpenDashboard(1)}
-              className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
-              📈 Dashboard (sprint #1)
+        <div className="flex gap-2 flex-wrap">
+          {/* Botões de ação só aparecem se houver pelo menos um sprint criado */}
+          {activeSprint && onOpenSprintBoard && (
+            <button onClick={() => onOpenSprintBoard(activeSprint.id)}
+              className="bg-orange-600 text-white px-3 py-2 rounded hover:bg-orange-700 text-sm">
+              📊 Mover para Sprint
             </button>
           )}
-          {/* Botão temporário (US6): abre o Kanban do sprint #1 para teste manual
-              Será substituído por seleção real de sprint quando a UI evoluir */}
-          {onOpenKanban && (
-            <button onClick={() => onOpenKanban(1)}
-              className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700">
-              📊 Kanban (sprint #1)
+          {activeSprint && onOpenKanban && (
+            <button onClick={() => onOpenKanban(activeSprint.id)}
+              className="bg-purple-600 text-white px-3 py-2 rounded hover:bg-purple-700 text-sm">
+              📋 Kanban
             </button>
           )}
-          {/* Botão temporário (US5): abre o SprintBoard do sprint #1 para mover
-              histórias backlog ↔ sprint. Será substituído quando a seleção real
-              de sprint estiver pronta na UI (a depender de US4). */}
-          {onOpenSprintBoard && (
-            <button onClick={() => onOpenSprintBoard(1)}
-              className="bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700">
-              📊 Sprint Board (sprint #1)
+          {activeSprint && onOpenDashboard && (
+            <button onClick={() => onOpenDashboard(activeSprint.id)}
+              className="bg-green-600 text-white px-3 py-2 rounded hover:bg-green-700 text-sm">
+              📈 Dashboard
             </button>
           )}
           <button onClick={() => { setEditingStory(null); setShowForm(true) }}
@@ -100,21 +109,21 @@ export default function Backlog({ token, projectId, onBack, onOpenDashboard, onO
         </div>
       </div>
 
-      {/* Estado vazio */}
-      {stories.length === 0 && !showForm && (
+      {loading && <p className="text-gray-500 text-center mt-12">Carregando...</p>}
+      {error && <p className="text-red-500 text-center mt-12">{error}</p>}
+      {!loading && !error && stories.length === 0 && !showForm && (
         <p className="text-gray-500 text-center mt-12">
           Nenhuma história no backlog. Adicione a primeira!
         </p>
       )}
 
-      {/* Lista de histórias ordenadas por prioridade */}
       <div className="space-y-3">
         {stories.map(story => (
           <div key={story.id} className="bg-white p-4 rounded-lg shadow border border-gray-200">
             <div className="flex justify-between items-start gap-4">
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className={`text-xs px-2 py-1 rounded ${labelColors[story.label]}`}>
+                  <span className={`text-xs px-2 py-1 rounded ${labelColors[story.label] || 'bg-gray-100 text-gray-700'}`}>
                     {story.label}
                   </span>
                   <span className="text-xs text-gray-500">#{story.id}</span>
@@ -138,11 +147,10 @@ export default function Backlog({ token, projectId, onBack, onOpenDashboard, onO
         ))}
       </div>
 
-      {/* Modal de criar/editar história */}
       {showForm && (
         <StoryForm token={token} projectId={projectId} story={editingStory}
           onClose={() => setShowForm(false)}
-          onSaved={() => { setShowForm(false); fetchStories() }} />
+          onSaved={() => { setShowForm(false); refresh() }} />
       )}
     </div>
   )

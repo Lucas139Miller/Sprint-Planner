@@ -89,24 +89,36 @@ router.delete('/stories/:id', async (req, res) => {
 });
 
 // PUT /api/stories/:id/move-to-sprint (US5)
+// Valida que o sprint destino pertence ao mesmo projeto da história, evitando
+// IDOR (mover história do projeto A para sprint do projeto B).
 router.put('/stories/:id/move-to-sprint', async (req, res) => {
   const { story, error: errAccess } = await getStoryAndCheckAccess(req.params.id, req.user.id);
   if (errAccess) return res.status(errAccess.status).json({ error: errAccess.message });
   if (!Object.prototype.hasOwnProperty.call(req.body, 'sprint_id')) {
     return res.status(400).json({ error: 'sprint_id é obrigatório (use null para voltar ao backlog)' });
   }
+  const sprintId = req.body.sprint_id;
+  // Se for um sprint específico (não null), verifica que pertence ao mesmo projeto
+  if (sprintId !== null) {
+    const { data: sprint } = await supabase.from('sp_sprints')
+      .select('project_id').eq('id', sprintId).maybeSingle();
+    if (!sprint) return res.status(404).json({ error: 'Sprint não encontrado' });
+    if (sprint.project_id !== story.project_id) {
+      return res.status(403).json({ error: 'Sprint não pertence ao projeto da história' });
+    }
+  }
   const { data } = await supabase.from('sp_user_stories')
-    .update({ sprint_id: req.body.sprint_id }).eq('id', story.id).select().single();
+    .update({ sprint_id: sprintId }).eq('id', story.id).select().single();
   res.json(data);
 });
 
 // GET /api/sprints/:sprintId/stories (US5)
 router.get('/sprints/:sprintId/stories', async (req, res) => {
   const { sprintId } = req.params;
-  // Pega project_id via uma das stories já no sprint OU via tabela sprints
   const { data: sprint } = await supabase
     .from('sp_sprints').select('project_id').eq('id', sprintId).maybeSingle();
-  if (sprint && !(await isMember(sprint.project_id, req.user.id))) {
+  if (!sprint) return res.status(404).json({ error: 'Sprint não encontrado' });
+  if (!(await isMember(sprint.project_id, req.user.id))) {
     return res.status(403).json({ error: 'Você não é membro deste projeto' });
   }
   const { data } = await supabase.from('sp_user_stories').select('*')
@@ -136,7 +148,8 @@ router.get('/sprints/:sprintId/board', async (req, res) => {
   const { sprintId } = req.params;
   const { data: sprint } = await supabase
     .from('sp_sprints').select('project_id').eq('id', sprintId).maybeSingle();
-  if (sprint && !(await isMember(sprint.project_id, req.user.id))) {
+  if (!sprint) return res.status(404).json({ error: 'Sprint não encontrado' });
+  if (!(await isMember(sprint.project_id, req.user.id))) {
     return res.status(403).json({ error: 'Você não é membro deste projeto' });
   }
 

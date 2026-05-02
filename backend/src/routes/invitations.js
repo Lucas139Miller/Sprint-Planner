@@ -50,15 +50,23 @@ router.post('/:id/accept', async (req, res) => {
 
   if (!invitation) return res.status(404).json({ error: 'Convite não encontrado ou já respondido' });
 
-  // Marca como aceito
-  await supabase.from('sp_invitations').update({ status: 'accepted' }).eq('id', invitation.id);
-
-  // Cria a membership
-  const { error } = await supabase.from('sp_project_members').insert({
+  // Cria a membership PRIMEIRO. Se falhar, o convite continua pending (recuperável).
+  // Se invertêssemos a ordem (accepted antes), uma falha aqui deixaria o convite "fantasma":
+  // marcado como aceito mas sem membership, sem como recuperar.
+  const { error: memberError } = await supabase.from('sp_project_members').insert({
     project_id: invitation.project_id, user_id: invitation.invitee_id, role: invitation.role,
   });
 
-  if (error) return res.status(500).json({ error: 'Erro ao aceitar convite' });
+  if (memberError) {
+    // Se já é membro (UNIQUE), ainda assim marca o convite como aceito (idempotência)
+    if (memberError.code !== '23505') {
+      return res.status(500).json({ error: 'Erro ao aceitar convite' });
+    }
+  }
+
+  // Só marca como aceito após a membership existir
+  await supabase.from('sp_invitations').update({ status: 'accepted' }).eq('id', invitation.id);
+
   res.json({ success: true, project_id: invitation.project_id });
 });
 
