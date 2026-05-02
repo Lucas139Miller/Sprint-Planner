@@ -4,6 +4,7 @@ import Register from './pages/Register'
 import Projects from './pages/Projects'
 import CreateProject from './pages/CreateProject'
 import ProjectDetail from './pages/ProjectDetail'
+import InvitationsPanel from './pages/InvitationsPanel'
 
 // Tipo que define a estrutura dos dados do usuário
 interface User {
@@ -25,6 +26,27 @@ function App() {
 
   // ID do projeto selecionado para a tela de detalhes
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null)
+
+  // Quantidade de convites pendentes (para o badge no sino)
+  const [pendingInvites, setPendingInvites] = useState(0)
+
+  // Controla se o painel de convites está aberto (dropdown)
+  const [showInvitations, setShowInvitations] = useState(false)
+
+  // Busca a contagem de convites pendentes a cada 10s
+  useEffect(() => {
+    if (!token) return
+    const fetchCount = () => {
+      fetch('http://localhost:3001/api/invitations', {
+        headers: { 'Authorization': `Bearer ${token}` },
+      })
+        .then(res => res.json())
+        .then(data => { if (Array.isArray(data)) setPendingInvites(data.length) })
+    }
+    fetchCount()
+    const interval = setInterval(fetchCount, 10000)
+    return () => clearInterval(interval)
+  }, [token])
 
   // useEffect roda quando o componente carrega (e quando 'token' muda)
   // Recupera os dados do usuário salvos no localStorage
@@ -66,6 +88,21 @@ function App() {
       <header className="bg-blue-700 text-white p-4 flex justify-between items-center">
         <h1 className="text-xl font-bold">Sprint Planner</h1>
         <div className="flex items-center gap-4">
+          {/* Sino de notificações com badge de contagem */}
+          <div className="relative">
+            <button onClick={() => setShowInvitations(!showInvitations)}
+              className="bg-blue-800 px-3 py-1 rounded hover:bg-blue-900 relative">
+              🔔 {pendingInvites > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                  {pendingInvites}
+                </span>
+              )}
+            </button>
+            {showInvitations && (
+              <InvitationsPanel token={token}
+                onResponded={() => { setPendingInvites(0); setPage('projects') }} />
+            )}
+          </div>
           <span>Olá, {user.username}</span>
           <button onClick={handleLogout}
             className="bg-blue-800 px-3 py-1 rounded hover:bg-blue-900">

@@ -718,3 +718,44 @@ sequenceDiagram
 - **Transação SQL**: `db.transaction()` garante que UPDATE + INSERT executam atomicamente
 - **JOIN triplo**: invitations + projects + users para retornar contexto completo
 - **Idempotência via WHERE**: aceitar/rejeitar duas vezes retorna 404 (não dá erro grave)
+
+---
+
+## Commit 18 — Adiciona sino de notificações e painel de convites no app
+
+**O que foi feito:** Criou `InvitationsPanel.tsx` (dropdown com lista de convites pendentes e botões aceitar/rejeitar). Adicionou no header do App.tsx um sino 🔔 com badge vermelho mostrando a quantidade de convites pendentes. Polling a cada 10s atualiza o contador.
+
+**Arquivos criados:** `frontend/src/pages/InvitationsPanel.tsx`  
+**Arquivos modificados:** `frontend/src/App.tsx`
+
+```mermaid
+graph TB
+    subgraph Header["Header do App"]
+        Bell["🔔 Sino<br/>Badge vermelho com<br/>quantidade pendente"]
+        Polling["setInterval 10s<br/>GET /api/invitations<br/>conta resultados"]
+        Polling -->|"atualiza"| Bell
+    end
+
+    Bell -->|"clica"| Panel["InvitationsPanel<br/>(dropdown)"]
+
+    subgraph Panel["Painel de Convites"]
+        Card1["📁 Projeto X<br/>alice te convidou como Dev<br/>[Aceitar] [Rejeitar]"]
+        Card2["📁 Projeto Y<br/>bob te convidou como Scrum Master<br/>[Aceitar] [Rejeitar]"]
+    end
+
+    Card1 -->|"Aceitar"| Accept["POST /invitations/:id/accept"]
+    Card1 -->|"Rejeitar"| Reject["POST /invitations/:id/reject"]
+    Accept -->|"Refresh"| Polling
+    Reject -->|"Refresh"| Polling
+    Accept -->|"vira membro"| ProjectsList["Aparece em Projects.tsx"]
+
+    style Bell fill:#4a90d9,color:#fff
+    style Accept fill:#5cb85c,color:#fff
+    style Reject fill:#999,color:#fff
+```
+
+**Conceitos introduzidos:**
+- **Polling com setInterval**: atualiza badge a cada 10s sem WebSocket
+- **Cleanup do useEffect**: `return () => clearInterval()` evita memory leak
+- **Badge condicional**: número só aparece se houver convites (pendingInvites > 0)
+- **Dropdown absoluto**: posição `absolute` para flutuar sobre o conteúdo
