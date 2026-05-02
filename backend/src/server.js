@@ -6,6 +6,7 @@ const authRoutes = require('./routes/auth');
 const projectRoutes = require('./routes/projects');
 const invitationRoutes = require('./routes/invitations');
 const storyRoutes = require('./routes/stories');
+const dashboardRoutes = require('./routes/dashboard');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -29,6 +30,9 @@ app.get('/api/health', (req, res) => {
 
 // Mount no /api para suportar /projects/:id/stories (rotas aninhadas)
 app.use('/api', storyRoutes);
+
+// Dashboard montado em /api porque tem rotas aninhadas em /sprints e /projects
+app.use('/api', dashboardRoutes);
 
 // Inicia o servidor HTTP na porta definida
 app.listen(PORT, () => {

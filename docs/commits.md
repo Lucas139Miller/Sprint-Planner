@@ -976,3 +976,85 @@ erDiagram
 - **Status como enum via CHECK**: 3 estados válidos garantidos no banco
 - **Datas como TEXT (ISO)**: SQLite armazena datas como string YYYY-MM-DD (formato lex-ordenável)
 - **DEFAULT 'planning'**: sprint nasce em planejamento (status inicial natural)
+
+---
+
+## Commit 25 — Adiciona rotas de dashboard e velocity (US7)
+
+**O que foi feito:** Criou `routes/dashboard.js` com duas rotas: `GET /api/sprints/:id/dashboard` (totais, progresso, contagem por status) e `GET /api/projects/:id/velocity` (média de pontos concluídos em sprints passados). A rota de velocity usa try/catch para degradar quando a tabela `sprints` ainda não existir.
+
+**Arquivos criados:** `backend/src/routes/dashboard.js`
+**Arquivos modificados:** `backend/src/server.js` (mount em `/api`)
+
+```mermaid
+graph LR
+    subgraph Dashboard["GET /api/sprints/:id/dashboard"]
+        D1["Acha project_id via 1ª story do sprint"] --> D2{"isMember?"}
+        D2 -->|"sim"| D3["SUM total + SUM done<br/>+ COUNT por status"]
+        D3 --> D4["{ totalPoints, completedPoints,<br/>progress%, byStatus, storiesCount }"]
+        D2 -->|"não"| D5["403"]
+    end
+
+    subgraph Velocity["GET /api/projects/:id/velocity"]
+        V1["isMember?"] --> V2["try: GROUP BY sprint<br/>SUM(done points)"]
+        V2 -->|"ok"| V3["{ velocity: avg, sprints: [...] }"]
+        V2 -->|"catch"| V4["{ velocity: 0, sprints: [] }"]
+    end
+
+    style D3 fill:#5cb85c,color:#fff
+    style D5 fill:#d9534f,color:#fff
+    style V4 fill:#f0ad4e,color:#fff
+```
+
+**Conceitos introduzidos:**
+- **SUM(CASE WHEN ...)**: agrega múltiplas métricas numa única query (sem N+1)
+- **Inferir project_id por story do sprint**: evita acoplar à tabela `sprints` (US4 paralela)
+- **try/catch graceful**: endpoint não quebra se tabela ainda não existir
+
+---
+
+## Commit 26 — Adiciona rotas CRUD de sprints (US4)
+
+**O que foi feito:** Criou `routes/sprints.js` com 4 rotas REST para criar, listar, atualizar e deletar sprints. Reutiliza o pattern `isMember` de stories.js. PUT usa COALESCE para atualização parcial. Apenas membros do projeto podem operar.
+
+**Arquivos criados:** `backend/src/routes/sprints.js`
+**Arquivos modificados:** `backend/src/server.js`
+
+```mermaid
+graph TB
+    subgraph Routes["routes/sprints.js"]
+        Helper1["isMember(projectId, userId)<br/>Valida acesso ao projeto"]
+        Helper2["getSprintAndCheckAccess(id, userId)<br/>Busca sprint + valida membro"]
+
+        POST["POST /projects/:projectId/sprints<br/>Cria sprint (default status='planning')"]
+        GET["GET /projects/:projectId/sprints<br/>Lista por created_at DESC"]
+        PUT["PUT /sprints/:id<br/>Atualização parcial via COALESCE"]
+        DELETE["DELETE /sprints/:id"]
+    end
+
+    POST --> Helper1
+    GET --> Helper1
+    PUT --> Helper2
+    DELETE --> Helper2
+
+    Helper2 -->|"404"| NotFound["Sprint não encontrado"]
+    Helper2 -->|"403"| NoAccess["Não é membro"]
+    Helper1 -->|"403"| NoAccess
+
+    POST --> SprintsDB[("sprints")]
+    GET --> SprintsDB
+    PUT --> SprintsDB
+    DELETE --> SprintsDB
+
+    style Helper1 fill:#7c3aed,color:#fff
+    style Helper2 fill:#7c3aed,color:#fff
+    style POST fill:#5cb85c,color:#fff
+    style GET fill:#4a90d9,color:#fff
+    style PUT fill:#f0ad4e,color:#fff
+    style DELETE fill:#d9534f,color:#fff
+```
+
+**Conceitos introduzidos:**
+- **Reuso de pattern**: `isMember` e `getXAndCheckAccess` replicam a estrutura de stories.js
+- **COALESCE em UPDATE**: permite mudar só o status sem reenviar todo o sprint (ex: 'planning'→'active')
+- **DEFAULT no INSERT**: status default 'planning' aplicado pelo banco quando não enviado
