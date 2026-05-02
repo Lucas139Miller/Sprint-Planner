@@ -900,3 +900,50 @@ graph TB
 - **COALESCE em UPDATE**: `SET col = COALESCE(?, col)` mantém valor antigo se NULL enviado
 - **PATCH semântico via PUT**: aceita campos parciais sem precisar enviar tudo
 - **DRY com helper**: lógica de validação extraída em função reutilizável
+
+---
+
+## Commit 23 — Adiciona página Backlog e StoryForm modal
+
+**O que foi feito:** Criou o Backlog (lista de histórias com label colorido, story points, editar/remover) e o StoryForm (modal para criar/editar com Fibonacci de pontos). ProjectDetail tem botão "Abrir Backlog".
+
+**Arquivos criados:** `Backlog.tsx`, `StoryForm.tsx`  
+**Arquivos modificados:** `ProjectDetail.tsx`, `App.tsx`
+
+```mermaid
+graph TB
+    subgraph Backlog["Backlog.tsx"]
+        Header["Cabeçalho<br/>+ Nova História"]
+        StoryList["Lista de histórias"]
+
+        Story1["📘 #1 [feature] Como user, quero login (3 pts)<br/>[Editar] [Remover]"]
+        Story2["🐛 #2 [bug] Senha não valida (1 pts)<br/>[Editar] [Remover]"]
+        Story3["⚙️ #3 [tech_debt] Refatorar auth (5 pts)<br/>[Editar] [Remover]"]
+
+        StoryList --> Story1 & Story2 & Story3
+    end
+
+    Header -->|"clica + Nova"| Modal
+    Story1 -->|"clica Editar"| Modal["StoryForm Modal"]
+
+    subgraph Modal["StoryForm.tsx (modal)"]
+        Title["Input título"]
+        Desc["Textarea descrição"]
+        Points["Select pontos: 0,1,2,3,5,8,13,21"]
+        Label["Select label: feature/bug/tech_debt"]
+        Save["[Salvar]"]
+    end
+
+    Save -->|"POST se nova<br/>PUT se editar"| API["Backend"]
+    API -->|"refresh"| StoryList
+
+    style Story1 fill:#dbeafe,stroke:#4a90d9
+    style Story2 fill:#fee2e2,stroke:#d9534f
+    style Story3 fill:#fef3c7,stroke:#f0ad4e
+```
+
+**Conceitos introduzidos:**
+- **Modal com overlay**: `fixed inset-0 bg-black bg-opacity-50` cria fundo escurecido
+- **stopPropagation**: clique dentro do form não fecha o modal (só clique no overlay)
+- **Fibonacci para pontos**: padrão Scrum (0, 1, 2, 3, 5, 8, 13, 21)
+- **Mesmo form para criar/editar**: prop `story` decide POST vs PUT
