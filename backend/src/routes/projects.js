@@ -65,6 +65,26 @@ router.get('/', async (req, res) => {
   res.json(result);
 });
 
+// DELETE /api/projects/:id - Remove projeto (apenas o dono pode)
+// FKs com ON DELETE CASCADE removem automaticamente: members, sprints,
+// invitations e user_stories. Não precisa de cleanup manual.
+router.delete('/:id', async (req, res) => {
+  const projectId = req.params.id;
+
+  // Apenas o owner_id pode deletar - membros comuns não devem ter esse poder
+  const { data: project } = await supabase
+    .from('sp_projects').select('owner_id').eq('id', projectId).maybeSingle();
+
+  if (!project) return res.status(404).json({ error: 'Projeto não encontrado' });
+  if (project.owner_id !== req.user.id) {
+    return res.status(403).json({ error: 'Apenas o dono pode deletar o projeto' });
+  }
+
+  const { error } = await supabase.from('sp_projects').delete().eq('id', projectId);
+  if (error) return res.status(500).json({ error: 'Erro ao deletar projeto' });
+  res.json({ success: true });
+});
+
 // POST /api/projects/:id/members - Convida membro (cria invitation pending)
 router.post('/:id/members', async (req, res) => {
   const { identifier, role } = req.body;

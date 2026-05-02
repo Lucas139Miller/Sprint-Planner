@@ -1,17 +1,16 @@
 import { useState, useEffect } from 'react'
-import { apiFetch } from '../api'
+import { apiFetch, ApiError } from '../api'
 
 interface Project {
   id: number
   name: string
   description: string
   role: string
+  owner_id: number
   created_at: string
 }
 
 interface ProjectsProps {
-  // token não é mais necessário aqui pois apiFetch lê do localStorage,
-  // mas mantemos a prop para forçar re-fetch quando o usuário troca
   token: string
   onCreateProject: () => void
   onSelectProject: (id: number) => void
@@ -21,14 +20,30 @@ export default function Projects({ token, onCreateProject, onSelectProject }: Pr
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  // user.id atual - usado para mostrar botão deletar só nos projetos do dono
+  const currentUserId = JSON.parse(localStorage.getItem('user') || '{}')?.id
 
-  useEffect(() => {
-    setLoading(true)
+  function refresh() {
+    setLoading(true); setError('')
     apiFetch<Project[]>('/api/projects')
       .then(data => setProjects(data))
       .catch(err => setError(err.message))
       .finally(() => setLoading(false))
-  }, [token])
+  }
+
+  useEffect(() => { refresh() }, [token])
+
+  // Deleta projeto após confirmação. stopPropagation evita disparar onSelectProject do card.
+  async function handleDelete(e: React.MouseEvent, projectId: number, name: string) {
+    e.stopPropagation()
+    if (!confirm(`Excluir o projeto "${name}"? Todas as histórias, sprints e membros serão removidos. Esta ação não pode ser desfeita.`)) return
+    try {
+      await apiFetch(`/api/projects/${projectId}`, { method: 'DELETE' })
+      refresh()
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Erro ao excluir projeto')
+    }
+  }
 
   const roleColors: Record<string, string> = {
     'PO': 'bg-purple-100 text-purple-700',
@@ -46,7 +61,6 @@ export default function Projects({ token, onCreateProject, onSelectProject }: Pr
         </button>
       </div>
 
-      {/* Estados visuais: carregando, erro, vazio, lista */}
       {loading && <p className="text-gray-500 text-center mt-12">Carregando projetos...</p>}
       {error && <p className="text-red-500 text-center mt-12">{error}</p>}
       {!loading && !error && projects.length === 0 && (
@@ -56,21 +70,32 @@ export default function Projects({ token, onCreateProject, onSelectProject }: Pr
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {projects.map(project => (
-          <div key={project.id} onClick={() => onSelectProject(project.id)}
-            className="bg-white p-5 rounded-lg shadow hover:shadow-md cursor-pointer border border-gray-200 transition-shadow">
-            <div className="flex justify-between items-start mb-2">
-              <h3 className="font-semibold text-gray-800">{project.name}</h3>
-              <span className={`text-xs px-2 py-1 rounded-full ${roleColors[project.role] || 'bg-gray-100 text-gray-700'}`}>
-                {project.role}
-              </span>
+        {projects.map(project => {
+          const isOwner = project.owner_id === currentUserId
+          return (
+            <div key={project.id} onClick={() => onSelectProject(project.id)}
+              className="bg-white p-5 rounded-lg shadow hover:shadow-md cursor-pointer border border-gray-200 transition-shadow group relative">
+              {/* Botão deletar - só para o dono. group-hover deixa visível só ao passar o mouse */}
+              {isOwner && (
+                <button onClick={e => handleDelete(e, project.id, project.name)}
+                  title="Excluir projeto"
+                  className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-red-50 hover:bg-red-100 text-red-600 w-7 h-7 rounded flex items-center justify-center text-sm">
+                  🗑
+                </button>
+              )}
+              <div className="flex justify-between items-start mb-2 pr-8">
+                <h3 className="font-semibold text-gray-800">{project.name}</h3>
+                <span className={`text-xs px-2 py-1 rounded-full ${roleColors[project.role] || 'bg-gray-100 text-gray-700'}`}>
+                  {project.role}
+                </span>
+              </div>
+              <p className="text-sm text-gray-500">{project.description || 'Sem descrição'}</p>
+              <p className="text-xs text-gray-400 mt-3">
+                Criado em {new Date(project.created_at).toLocaleDateString('pt-BR')}
+              </p>
             </div>
-            <p className="text-sm text-gray-500">{project.description || 'Sem descrição'}</p>
-            <p className="text-xs text-gray-400 mt-3">
-              Criado em {new Date(project.created_at).toLocaleDateString('pt-BR')}
-            </p>
-          </div>
-        ))}
+          )
+        })}
       </div>
     </div>
   )
