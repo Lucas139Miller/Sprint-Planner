@@ -16,9 +16,17 @@ interface BacklogProps {
   token: string
   projectId: number
   onBack: () => void
+  // onOpenDashboard é opcional: abre o Dashboard de um sprint para teste rápido
+  onOpenDashboard?: (sprintId: number) => void
+  // onOpenKanban (US6): abre o Kanban Board de um sprint para teste rápido
+  // Opcional para evitar quebrar callers antigos que não passam o callback
+  onOpenKanban?: (sprintId: number) => void
+  // onOpenSprintBoard (US5): abre o SprintBoard para mover histórias entre
+  // backlog ↔ sprint. Opcional pelo mesmo motivo dos demais callbacks.
+  onOpenSprintBoard?: (sprintId: number) => void
 }
 
-export default function Backlog({ token, projectId, onBack }: BacklogProps) {
+export default function Backlog({ token, projectId, onBack, onOpenDashboard, onOpenKanban, onOpenSprintBoard }: BacklogProps) {
   const [stories, setStories] = useState<Story[]>([])
   const [showForm, setShowForm] = useState(false)
   const [editingStory, setEditingStory] = useState<Story | null>(null)
@@ -59,10 +67,37 @@ export default function Backlog({ token, projectId, onBack }: BacklogProps) {
 
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-gray-800">Backlog</h2>
-        <button onClick={() => { setEditingStory(null); setShowForm(true) }}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-          + Nova História
-        </button>
+        <div className="flex gap-2">
+          {/* Botão temporário: abre o Dashboard do sprint #1 para testar US7
+              (mais tarde será substituído por seleção real de sprint na UI) */}
+          {onOpenDashboard && (
+            <button onClick={() => onOpenDashboard(1)}
+              className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+              📈 Dashboard (sprint #1)
+            </button>
+          )}
+          {/* Botão temporário (US6): abre o Kanban do sprint #1 para teste manual
+              Será substituído por seleção real de sprint quando a UI evoluir */}
+          {onOpenKanban && (
+            <button onClick={() => onOpenKanban(1)}
+              className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700">
+              📊 Kanban (sprint #1)
+            </button>
+          )}
+          {/* Botão temporário (US5): abre o SprintBoard do sprint #1 para mover
+              histórias backlog ↔ sprint. Será substituído quando a seleção real
+              de sprint estiver pronta na UI (a depender de US4). */}
+          {onOpenSprintBoard && (
+            <button onClick={() => onOpenSprintBoard(1)}
+              className="bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700">
+              📊 Sprint Board (sprint #1)
+            </button>
+          )}
+          <button onClick={() => { setEditingStory(null); setShowForm(true) }}
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+            + Nova História
+          </button>
+        </div>
       </div>
 
       {/* Estado vazio */}

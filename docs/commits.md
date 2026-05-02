@@ -1286,3 +1286,55 @@ graph TB
 - **Cell por item**: cada fatia do Pie/barra com cor própria via `<Cell fill="..." />`
 - **Burndown simplificado**: 3 pontos (início, hoje, fim) sem histórico diário ainda
 - **StatCard reusável**: extrai cards repetitivos para evitar duplicação de classes Tailwind
+
+---
+
+## Commit US5-B — Integra SprintBoard na navegação e marca US5 concluída
+
+**O que foi feito:** Adicionou prop `onOpenSprintBoard` em Backlog.tsx com botão temporário "📊 Sprint Board (sprint #1)" (fica ao lado do Dashboard/Kanban). Em App.tsx, registrou a página `'sprint-board'` com estado `selectedSprintId` e renderiza `<SprintBoard>` quando ativa. Atualizou CLAUDE.md com os 2 endpoints US5 (`PUT /api/stories/:id/move-to-sprint` e `GET /api/sprints/:id/stories`) e marcou US5 como [x] no roadmap.
+
+**Arquivos modificados:** `frontend/src/App.tsx`, `frontend/src/pages/Backlog.tsx`, `CLAUDE.md`
+
+```mermaid
+graph LR
+    Projects["Projects.tsx"] -->|"clica card"| PD["ProjectDetail.tsx"]
+    PD -->|"📋 Abrir Backlog"| Backlog["Backlog.tsx"]
+    Backlog -->|"📊 Sprint Board (sprint #1)"| Board["SprintBoard.tsx"]
+    Board -->|"PUT move-to-sprint<br/>GET sprints/:id/stories"| API["Backend US5"]
+    API -->|"refresh"| Board
+
+    style Board fill:#fb923c,color:#fff
+    style API fill:#4a90d9,color:#fff
+    style Backlog fill:#dbeafe
+```
+
+**Conceitos introduzidos:**
+- **State machine de páginas**: nova página `sprint-board` integra-se no switch de rendering
+- **selectedSprintId no App**: estado dedicado para o sprint do board (separado de selectedProjectId)
+- **Botão temporário com sprintId fixo**: simplifica testes da US5 enquanto US4 (seleção real) é construída
+- **Endpoints US5 documentados**: tabela do CLAUDE.md reflete os 2 novos endpoints em uso
+
+---
+
+## Commit US6-final — Integra KanbanBoard na navegação e marca US6 concluída
+
+**O que foi feito:** Adicionou prop `onOpenKanban` em Backlog.tsx com botão temporário "Kanban (sprint #1)". Em App.tsx, registrou a página `'kanban'` reusando o estado `selectedSprintId` e renderiza `<KanbanBoard>` quando ativa. Atualizou CLAUDE.md com os 2 endpoints US6 (`PUT /api/stories/:id/status` e `GET /api/sprints/:id/board`) e marcou US6 como [x] no roadmap.
+
+**Arquivos modificados:** `frontend/src/App.tsx`, `frontend/src/pages/Backlog.tsx`, `CLAUDE.md`
+
+```mermaid
+graph LR
+    Backlog["Backlog.tsx"] -->|"botao Kanban (sprint #1)"| Kanban["KanbanBoard.tsx"]
+    Kanban -->|"GET sprints/:id/board"| API["Backend US6"]
+    Kanban -->|"PUT stories/:id/status"| API
+    API -->|"refresh"| Kanban
+
+    style Kanban fill:#a855f7,color:#fff
+    style API fill:#4a90d9,color:#fff
+    style Backlog fill:#dbeafe
+```
+
+**Conceitos introduzidos:**
+- **Reuso do selectedSprintId**: mesmo estado do Dashboard/SprintBoard, evita variaveis paralelas
+- **Botao temporario fixo**: `onOpenKanban(1)` simplifica testes manuais ate a UI ter selecao real
+- **Roadmap atualizado**: US6 [x] marca a feature completa (backend + frontend + integracao)

@@ -8,6 +8,8 @@ import InvitationsPanel from './pages/InvitationsPanel'
 import Backlog from './pages/Backlog'
 import Sprints from './pages/Sprints'
 import Dashboard from './pages/Dashboard'
+import SprintBoard from './pages/SprintBoard'
+import KanbanBoard from './pages/KanbanBoard'
 
 // Tipo que define a estrutura dos dados do usuário
 interface User {
@@ -26,7 +28,8 @@ function App() {
 
   // Controla qual página mostrar dentro do app
   // 'sprints' adicionado pela US4 para listar/criar sprints do projeto
-  const [page, setPage] = useState<'login' | 'register' | 'projects' | 'create-project' | 'project-detail' | 'backlog' | 'sprints' | 'dashboard'>('login')
+  // 'sprint-board' adicionado pela US5 para mover histórias entre backlog e sprint
+  const [page, setPage] = useState<'login' | 'register' | 'projects' | 'create-project' | 'project-detail' | 'backlog' | 'sprints' | 'dashboard' | 'kanban' | 'sprint-board'>('login')
 
   // ID do projeto selecionado para a tela de detalhes
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null)
@@ -135,7 +138,9 @@ function App() {
           <Backlog token={token}
             projectId={selectedProjectId}
             onBack={() => setPage('project-detail')}
-            onOpenDashboard={(sprintId) => { setSelectedSprintId(sprintId); setPage('dashboard') }} />
+            onOpenDashboard={(sprintId) => { setSelectedSprintId(sprintId); setPage('dashboard') }}
+            onOpenKanban={(sprintId) => { setSelectedSprintId(sprintId); setPage('kanban') }}
+            onOpenSprintBoard={(sprintId) => { setSelectedSprintId(sprintId); setPage('sprint-board') }} />
         )}
         {/* US4: tela de listar/criar sprints do projeto selecionado */}
         {page === 'sprints' && selectedProjectId && (
@@ -150,7 +155,21 @@ function App() {
             sprintId={selectedSprintId}
             onBack={() => setPage('backlog')} />
         )}
-        {(page === 'projects' || (page !== 'create-project' && page !== 'project-detail' && page !== 'backlog' && page !== 'sprints' && page !== 'dashboard')) && (
+        {/* US6: Kanban Board com 4 colunas (To Do | In Progress | In Review | Done) */}
+        {page === 'kanban' && selectedProjectId && selectedSprintId && (
+          <KanbanBoard token={token}
+            projectId={selectedProjectId}
+            sprintId={selectedSprintId}
+            onBack={() => setPage('backlog')} />
+        )}
+        {/* US5: SprintBoard - move histórias entre backlog e sprint atual */}
+        {page === 'sprint-board' && selectedProjectId && selectedSprintId && (
+          <SprintBoard token={token}
+            projectId={selectedProjectId}
+            sprintId={selectedSprintId}
+            onBack={() => setPage('backlog')} />
+        )}
+        {(page === 'projects' || (page !== 'create-project' && page !== 'project-detail' && page !== 'backlog' && page !== 'sprints' && page !== 'dashboard' && page !== 'kanban' && page !== 'sprint-board')) && (
           <Projects token={token}
             onCreateProject={() => setPage('create-project')}
             onSelectProject={(id) => { setSelectedProjectId(id); setPage('project-detail') }} />

@@ -95,6 +95,10 @@ sprint-planner/
 | GET | `/api/projects/:id/sprints` | Lista sprints do projeto | - | JWT (membro) |
 | PUT | `/api/sprints/:id` | Atualiza sprint (parcial) | qualquer campo | JWT (membro) |
 | DELETE | `/api/sprints/:id` | Remove sprint | - | JWT (membro) |
+| PUT | `/api/stories/:id/move-to-sprint` | Move história entre backlog e sprint (US5) | `{ sprint_id }` (null = backlog) | JWT (membro) |
+| GET | `/api/sprints/:id/stories` | Lista histórias atribuídas a um sprint (US5) | - | JWT (membro) |
+| PUT | `/api/stories/:id/status` | Move história entre colunas do Kanban (US6) | `{ status, assignee_id? }` | JWT (membro) |
+| GET | `/api/sprints/:id/board` | Histórias do sprint agrupadas por status (US6) | - | JWT (membro) |
 | GET | `/api/sprints/:id/dashboard` | Métricas agregadas do sprint (pontos, progresso, status) | - | JWT (membro) |
 | GET | `/api/projects/:id/velocity` | Média de pontos concluídos em sprints passados | - | JWT (membro) |
 
@@ -104,8 +108,8 @@ sprint-planner/
 - [x] **US2**: Criar projeto e convidar membros
 - [x] **US3**: Adicionar histórias ao backlog (PO)
 - [x] **US4**: Criar sprint com datas
-- [ ] **US5**: Mover histórias do backlog para o sprint
-- [ ] **US6**: Board Kanban (To Do / In Progress / In Review / Done)
+- [x] **US5**: Mover histórias do backlog para o sprint
+- [x] **US6**: Board Kanban (To Do / In Progress / In Review / Done)
 - [x] **US7**: Dashboard com progresso do sprint
 - [ ] **US8**: Gerar sugestões de histórias via IA
 - [ ] **US9**: Encerrar sprint com resumo automático por IA
