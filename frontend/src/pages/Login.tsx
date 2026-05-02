@@ -19,22 +19,21 @@ export default function Login({ onSwitch, onLogin }: LoginProps) {
     e.preventDefault()  // Impede o comportamento padrão do form (recarregar a página)
     setError('')        // Limpa erro anterior
 
-    // Faz uma requisição POST para a API de login no backend
-    // Envia email e senha no body como JSON
-    const res = await fetch('http://localhost:3001/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    })
+    // try/catch captura erros de rede (backend caído, CORS) que antes travavam
+    // o formulário silenciosamente sem nenhum feedback ao usuário.
+    try {
+      const res = await fetch('http://localhost:3001/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      })
 
-    // Converte a resposta JSON para objeto JS
-    const data = await res.json()
-
-    // Se a resposta não foi OK (ex: 401 Unauthorized), mostra a mensagem de erro
-    if (!res.ok) return setError(data.error)
-
-    // Se deu certo, chama onLogin que salva o token e redireciona para a tela principal
-    onLogin(data.token, data.user)
+      const data = await res.json()
+      if (!res.ok) return setError(data.error || 'Erro ao fazer login')
+      onLogin(data.token, data.user)
+    } catch {
+      setError('Não foi possível conectar ao servidor. Verifique se o backend está rodando.')
+    }
   }
 
   return (

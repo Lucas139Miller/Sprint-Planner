@@ -19,22 +19,29 @@ export default function Register({ onSwitch, onLogin }: RegisterProps) {
     e.preventDefault()
     setError('')
 
-    // Faz requisição POST para a API de registro
-    // Envia username, email e senha - o backend faz o hash da senha antes de salvar
-    const res = await fetch('http://localhost:3001/api/auth/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, email, password }),
-    })
+    // try/catch evita que erros de rede/CORS travem o formulário em silêncio.
+    // Sem try, qualquer falha do fetch faria a função abortar sem mostrar nada.
+    try {
+      // Faz requisição POST para a API de registro
+      // Envia username, email e senha - o backend faz o hash da senha antes de salvar
+      const res = await fetch('http://localhost:3001/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, email, password }),
+      })
 
-    const data = await res.json()
+      const data = await res.json()
 
-    // Se deu erro (ex: 409 = email já existe), mostra a mensagem
-    if (!res.ok) return setError(data.error)
+      // Se deu erro (ex: 409 = email já existe), mostra a mensagem
+      if (!res.ok) return setError(data.error || 'Erro ao criar conta')
 
-    // Se registro foi bem-sucedido, já loga o usuário automaticamente
-    // (o backend já retorna o token no registro, então não precisa de um login separado)
-    onLogin(data.token, data.user)
+      // Se registro foi bem-sucedido, já loga o usuário automaticamente
+      // (o backend já retorna o token no registro, então não precisa de um login separado)
+      onLogin(data.token, data.user)
+    } catch {
+      // Erro de rede: backend caído ou não acessível
+      setError('Não foi possível conectar ao servidor. Verifique se o backend está rodando.')
+    }
   }
 
   return (
