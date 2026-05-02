@@ -1162,3 +1162,48 @@ graph TB
 - **Agrupamento no backend**: frontend recebe pronto, evita 4×`.filter()` no cliente
 - **LEFT JOIN para opcional**: traz `assignee_username` mesmo quando assignee_id é NULL
 - **hasOwnProperty**: distingue "campo não enviado" de "campo enviado como null"
+
+---
+
+## Commit US5-A — Adiciona página SprintBoard com colunas Backlog ↔ Sprint (US5)
+
+**O que foi feito:** Criou `SprintBoard.tsx`, página com duas colunas lado a lado (Backlog à esquerda, Sprint Atual à direita) e botões em cada card para mover histórias entre os dois estados. Cada coluna mostra contagem de histórias e total de pontos no topo, ajudando o PO a planejar capacidade do sprint. Consome os endpoints US5 do backend (`PUT /api/stories/:id/move-to-sprint` e `GET /api/sprints/:id/stories`).
+
+**Arquivos criados:** `frontend/src/pages/SprintBoard.tsx`
+
+```mermaid
+graph TB
+    subgraph Board["SprintBoard.tsx"]
+        Header["📊 Sprint Board (#sprintId)"]
+        Cols["Grid 2 colunas"]
+
+        subgraph Backlog["📋 Backlog<br/>(N histórias · X pts)"]
+            B1["Card #1 [feature] 3 pts<br/>[→ Mover para Sprint]"]
+            B2["Card #2 [bug] 1 pt<br/>[→ Mover para Sprint]"]
+        end
+
+        subgraph Sprint["🚀 Sprint Atual<br/>(M histórias · Y pts)"]
+            S1["Card #3 [feature] 5 pts<br/>[← Voltar ao Backlog]"]
+            S2["Card #4 [tech_debt] 8 pts<br/>[← Voltar ao Backlog]"]
+        end
+
+        Cols --> Backlog & Sprint
+    end
+
+    B1 -->|"PUT /stories/1/move-to-sprint<br/>{ sprint_id: 1 }"| API["Backend"]
+    S1 -->|"PUT /stories/3/move-to-sprint<br/>{ sprint_id: null }"| API
+    API -->|"refresh ambas listas"| Cols
+
+    Header -->|"useEffect"| Promise["Promise.all([<br/>GET /projects/:id/stories,<br/>GET /sprints/:id/stories<br/>])"]
+    Promise --> Cols
+
+    style Backlog fill:#f3f4f6,stroke:#9ca3af
+    style Sprint fill:#dbeafe,stroke:#4a90d9
+    style API fill:#4a90d9,color:#fff
+```
+
+**Conceitos introduzidos:**
+- **Promise.all para fetch paralelo**: backlog e sprint carregam simultaneamente (latência mínima)
+- **Card reutilizável**: mesma função `renderCard()` cria cards das duas colunas, mudando só o botão
+- **Total de pontos no header**: `reduce` agrega story_points para o PO planejar capacidade
+- **Layout responsivo**: `grid-cols-1 md:grid-cols-2` empilha colunas em telas pequenas
