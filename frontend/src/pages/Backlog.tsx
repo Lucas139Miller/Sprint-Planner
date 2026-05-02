@@ -10,50 +10,61 @@ interface Story {
   label: string
   priority: number
   status: string
+  sprint_id: number | null
 }
 
-interface Sprint {
-  id: number
-  name: string
-  status: string
-}
+interface SprintMini { id: number; name: string; status: string }
 
 interface BacklogProps {
   token: string
   projectId: number
   onBack: () => void
-  // Callbacks recebem o sprintId real (descoberto via API), não mais hardcoded
-  onOpenDashboard?: (sprintId: number) => void
-  onOpenKanban?: (sprintId: number) => void
-  onOpenSprintBoard?: (sprintId: number) => void
+  embedded?: boolean
 }
 
-export default function Backlog({ token, projectId, onBack, onOpenDashboard, onOpenKanban, onOpenSprintBoard }: BacklogProps) {
+export default function Backlog({ token, projectId, onBack, embedded }: BacklogProps) {
   const [stories, setStories] = useState<Story[]>([])
-  const [sprints, setSprints] = useState<Sprint[]>([])
+  const [sprints, setSprints] = useState<SprintMini[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [editingStory, setEditingStory] = useState<Story | null>(null)
+  const [viewAll, setViewAll] = useState(false)
 
-  // Busca histórias e sprints em paralelo. Sprints serve para os botões
-  // saberem qual sprintId real usar (em vez do hardcoded 1).
   async function refresh() {
     setLoading(true); setError('')
     try {
+      const storiesPath = viewAll
+        ? `/api/projects/${projectId}/stories?include=all`
+        : `/api/projects/${projectId}/stories`
       const [storiesData, sprintsData] = await Promise.all([
-        apiFetch<Story[]>(`/api/projects/${projectId}/stories`),
-        apiFetch<Sprint[]>(`/api/projects/${projectId}/sprints`),
+        apiFetch<Story[]>(storiesPath),
+        apiFetch<SprintMini[]>(`/api/projects/${projectId}/sprints`),
       ])
       setStories(storiesData); setSprints(sprintsData)
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Erro ao carregar dados')
+      setError(err instanceof ApiError ? err.message : 'Erro ao carregar histórias')
     } finally {
       setLoading(false)
     }
   }
 
-  useEffect(() => { refresh() }, [projectId, token])
+  useEffect(() => { refresh() }, [projectId, token, viewAll])
+
+  // Move uma história para um sprint específico ou de volta ao backlog (null)
+  async function moveToSprint(storyId: number, sprintId: number | null) {
+    try {
+      await apiFetch(`/api/stories/${storyId}/move-to-sprint`, {
+        method: 'PUT', body: JSON.stringify({ sprint_id: sprintId }),
+      })
+      refresh()
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Erro ao mover história')
+    }
+  }
+
+  // Sprint ativo é o destino default ao mover histórias do backlog
+  const activeSprint = sprints.find(s => s.status === 'active') || sprints.find(s => s.status === 'planning')
 
   async function handleDelete(id: number) {
     if (!confirm('Tem certeza que deseja remover esta história?')) return
@@ -61,12 +72,12 @@ export default function Backlog({ token, projectId, onBack, onOpenDashboard, onO
       await apiFetch(`/api/stories/${id}`, { method: 'DELETE' })
       refresh()
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Erro ao remover história')
+      setError(err instanceof ApiError ? err.message : 'Erro ao remover')
     }
   }
 
-  // Sprint ativo (active) ou primeiro disponível, usado para os botões de ação rápida
-  const activeSprint = sprints.find(s => s.status === 'active') || sprints[0]
+  // Total de pontos no backlog (sem sprint) - útil para PO planejar
+  const backlogPoints = stories.filter(s => !s.sprint_id).reduce((sum, s) => sum + (s.story_points || 0), 0)
 
   const labelColors: Record<string, string> = {
     'feature': 'bg-blue-100 text-blue-700',
@@ -75,72 +86,85 @@ export default function Backlog({ token, projectId, onBack, onOpenDashboard, onO
   }
 
   return (
-    <div className="p-8 max-w-4xl mx-auto">
-      <button onClick={onBack} className="text-blue-600 hover:underline mb-4">
-        ← Voltar aos projetos
-      </button>
+    <div className="p-6 max-w-5xl mx-auto">
+      {!embedded && (
+        <button onClick={onBack} className="text-blue-600 hover:underline mb-4">
+          ← Voltar
+        </button>
+      )}
 
-      <div className="flex justify-between items-center mb-6 flex-wrap gap-2">
-        <h2 className="text-2xl font-bold text-gray-800">Backlog</h2>
-        <div className="flex gap-2 flex-wrap">
-          {/* Botões de ação só aparecem se houver pelo menos um sprint criado */}
-          {activeSprint && onOpenSprintBoard && (
-            <button onClick={() => onOpenSprintBoard(activeSprint.id)}
-              className="bg-orange-600 text-white px-3 py-2 rounded hover:bg-orange-700 text-sm">
-              📊 Mover para Sprint
-            </button>
-          )}
-          {activeSprint && onOpenKanban && (
-            <button onClick={() => onOpenKanban(activeSprint.id)}
-              className="bg-purple-600 text-white px-3 py-2 rounded hover:bg-purple-700 text-sm">
-              📋 Kanban
-            </button>
-          )}
-          {activeSprint && onOpenDashboard && (
-            <button onClick={() => onOpenDashboard(activeSprint.id)}
-              className="bg-green-600 text-white px-3 py-2 rounded hover:bg-green-700 text-sm">
-              📈 Dashboard
-            </button>
-          )}
+      <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
+        <div>
+          <h2 className="text-xl font-bold text-gray-800">Backlog do Produto</h2>
+          <p className="text-xs text-gray-500 mt-1">
+            {stories.filter(s => !s.sprint_id).length} histórias · {backlogPoints} pontos
+          </p>
+        </div>
+        <div className="flex gap-2 items-center">
+          {/* Toggle: ver só backlog vs ver todas (inclui histórias em sprints) */}
+          <label className="text-sm text-gray-600 flex items-center gap-1 cursor-pointer">
+            <input type="checkbox" checked={viewAll} onChange={e => setViewAll(e.target.checked)} />
+            Mostrar histórias em sprints
+          </label>
           <button onClick={() => { setEditingStory(null); setShowForm(true) }}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm">
             + Nova História
           </button>
         </div>
       </div>
 
-      {loading && <p className="text-gray-500 text-center mt-12">Carregando...</p>}
-      {error && <p className="text-red-500 text-center mt-12">{error}</p>}
+      {loading && <p className="text-gray-500 text-center py-8">Carregando histórias...</p>}
+      {error && <p className="text-red-500 text-center py-8">{error}</p>}
       {!loading && !error && stories.length === 0 && !showForm && (
-        <p className="text-gray-500 text-center mt-12">
-          Nenhuma história no backlog. Adicione a primeira!
-        </p>
+        <div className="text-center py-12 bg-white rounded-lg border-2 border-dashed border-gray-200">
+          <p className="text-gray-500 mb-3">Nenhuma história ainda.</p>
+          <button onClick={() => { setEditingStory(null); setShowForm(true) }}
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+            + Criar primeira história
+          </button>
+        </div>
       )}
 
-      <div className="space-y-3">
+      <div className="space-y-2">
         {stories.map(story => (
-          <div key={story.id} className="bg-white p-4 rounded-lg shadow border border-gray-200">
-            <div className="flex justify-between items-start gap-4">
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className={`text-xs px-2 py-1 rounded ${labelColors[story.label] || 'bg-gray-100 text-gray-700'}`}>
-                    {story.label}
-                  </span>
-                  <span className="text-xs text-gray-500">#{story.id}</span>
-                </div>
-                <h3 className="font-medium text-gray-800">{story.title}</h3>
-                {story.description && (
-                  <p className="text-sm text-gray-600 mt-1">{story.description}</p>
+          <div key={story.id}
+            className={`bg-white p-3 rounded-lg shadow-sm border hover:shadow-md transition-shadow ${
+              story.sprint_id ? 'border-gray-200 opacity-70' : 'border-gray-200'
+            }`}>
+            <div className="flex justify-between items-center gap-3">
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <span className={`text-xs px-2 py-0.5 rounded ${labelColors[story.label] || 'bg-gray-100 text-gray-700'} flex-shrink-0`}>
+                  {story.label}
+                </span>
+                <span className="text-xs text-gray-400 flex-shrink-0">#{story.id}</span>
+                <h3 className="font-medium text-gray-800 text-sm truncate">{story.title}</h3>
+                {story.sprint_id && (
+                  <span className="text-xs text-blue-600 flex-shrink-0">🏃 sprint</span>
                 )}
               </div>
-              <div className="flex items-center gap-3">
-                <span className="bg-gray-100 px-3 py-1 rounded-full text-sm font-medium text-gray-700">
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <span className="bg-gray-100 px-2 py-0.5 rounded text-xs font-medium text-gray-700">
                   {story.story_points} pts
                 </span>
+                {/* Quick action: mover backlog → sprint ativo. Substitui o SprintBoard separado */}
+                {!story.sprint_id && activeSprint && (
+                  <button onClick={() => moveToSprint(story.id, activeSprint.id)}
+                    title={`Mover para ${activeSprint.name}`}
+                    className="text-xs bg-orange-50 text-orange-700 hover:bg-orange-100 px-2 py-1 rounded">
+                    → Sprint
+                  </button>
+                )}
+                {story.sprint_id && (
+                  <button onClick={() => moveToSprint(story.id, null)}
+                    title="Voltar ao backlog"
+                    className="text-xs bg-gray-50 text-gray-700 hover:bg-gray-100 px-2 py-1 rounded">
+                    ← Backlog
+                  </button>
+                )}
                 <button onClick={() => { setEditingStory(story); setShowForm(true) }}
-                  className="text-blue-600 hover:underline text-sm">Editar</button>
+                  className="text-blue-600 hover:underline text-xs">Editar</button>
                 <button onClick={() => handleDelete(story.id)}
-                  className="text-red-600 hover:underline text-sm">Remover</button>
+                  className="text-red-600 hover:underline text-xs">Remover</button>
               </div>
             </div>
           </div>

@@ -17,9 +17,11 @@ interface SprintsProps {
   token: string
   projectId: number
   onBack: () => void
+  embedded?: boolean
+  onSprintsChanged?: () => void   // Avisa o workspace pra recarregar o seletor
 }
 
-export default function Sprints({ token, projectId, onBack }: SprintsProps) {
+export default function Sprints({ token, projectId, onBack, embedded, onSprintsChanged }: SprintsProps) {
   const [sprints, setSprints] = useState<Sprint[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -44,16 +46,28 @@ export default function Sprints({ token, projectId, onBack }: SprintsProps) {
     if (!confirm('Tem certeza que deseja remover este sprint?')) return
     try {
       await apiFetch(`/api/sprints/${id}`, { method: 'DELETE' })
-      fetchSprints()
+      fetchSprints(); onSprintsChanged?.()
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Erro ao remover sprint')
     }
   }
 
+  // Atalho: ativar sprint diretamente do card (mais rápido que abrir modal)
+  async function setStatus(sprint: Sprint, newStatus: Sprint['status']) {
+    try {
+      await apiFetch(`/api/sprints/${sprint.id}`, {
+        method: 'PUT', body: JSON.stringify({ status: newStatus }),
+      })
+      fetchSprints(); onSprintsChanged?.()
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Erro ao mudar status')
+    }
+  }
+
   const statusColors: Record<string, string> = {
-    'planning': 'bg-yellow-100 text-yellow-700',
-    'active': 'bg-green-100 text-green-700',
-    'completed': 'bg-gray-100 text-gray-700',
+    'planning': 'bg-yellow-100 text-yellow-700 border-yellow-300',
+    'active': 'bg-green-100 text-green-700 border-green-300',
+    'completed': 'bg-gray-100 text-gray-700 border-gray-300',
   }
 
   const statusLabels: Record<string, string> = {
@@ -62,7 +76,6 @@ export default function Sprints({ token, projectId, onBack }: SprintsProps) {
     'completed': 'Concluído',
   }
 
-  // Usa Date para evitar bug com timestamps ISO completos (não só YYYY-MM-DD)
   function formatDate(d: string | null): string {
     if (!d) return '—'
     const date = new Date(d)
@@ -71,50 +84,73 @@ export default function Sprints({ token, projectId, onBack }: SprintsProps) {
   }
 
   return (
-    <div className="p-8 max-w-4xl mx-auto">
-      <button onClick={onBack} className="text-blue-600 hover:underline mb-4">
-        ← Voltar ao projeto
-      </button>
+    <div className="p-6 max-w-5xl mx-auto">
+      {!embedded && (
+        <button onClick={onBack} className="text-blue-600 hover:underline mb-4">← Voltar</button>
+      )}
 
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-800">Sprints</h2>
+      <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
+        <div>
+          <h2 className="text-xl font-bold text-gray-800">Sprints</h2>
+          <p className="text-xs text-gray-500 mt-1">{sprints.length} sprint(s)</p>
+        </div>
         <button onClick={() => { setEditingSprint(null); setShowForm(true) }}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm">
           + Novo Sprint
         </button>
       </div>
 
-      {loading && <p className="text-gray-500 text-center mt-12">Carregando sprints...</p>}
-      {error && <p className="text-red-500 text-center mt-12">{error}</p>}
+      {loading && <p className="text-gray-500 text-center py-8">Carregando sprints...</p>}
+      {error && <p className="text-red-500 text-center py-8">{error}</p>}
       {!loading && !error && sprints.length === 0 && !showForm && (
-        <p className="text-gray-500 text-center mt-12">
-          Nenhum sprint criado ainda. Crie o primeiro!
-        </p>
+        <div className="text-center py-12 bg-white rounded-lg border-2 border-dashed border-gray-200">
+          <p className="text-gray-500 mb-3">Nenhum sprint criado ainda.</p>
+          <button onClick={() => { setEditingSprint(null); setShowForm(true) }}
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+            + Criar primeiro sprint
+          </button>
+        </div>
       )}
 
       <div className="space-y-3">
         {sprints.map(sprint => (
-          <div key={sprint.id} className="bg-white p-4 rounded-lg shadow border border-gray-200">
+          <div key={sprint.id}
+            className={`bg-white p-4 rounded-lg shadow-sm border hover:shadow-md transition-shadow ${
+              sprint.status === 'active' ? 'border-green-300 ring-1 ring-green-200' : 'border-gray-200'
+            }`}>
             <div className="flex justify-between items-start gap-4">
               <div className="flex-1">
-                <div className="flex items-center gap-2 mb-2">
+                <div className="flex items-center gap-2 mb-1">
                   <h3 className="font-semibold text-gray-800">{sprint.name}</h3>
-                  <span className={`text-xs px-2 py-1 rounded ${statusColors[sprint.status] || 'bg-gray-100 text-gray-700'}`}>
+                  <span className={`text-xs px-2 py-0.5 rounded border ${statusColors[sprint.status] || 'bg-gray-100 text-gray-700 border-gray-300'}`}>
                     {statusLabels[sprint.status] || sprint.status}
                   </span>
                 </div>
-                {sprint.goal && (
-                  <p className="text-sm text-gray-600 mb-2">{sprint.goal}</p>
-                )}
+                {sprint.goal && (<p className="text-sm text-gray-600 mb-2">{sprint.goal}</p>)}
                 <p className="text-xs text-gray-500">
                   📅 {formatDate(sprint.start_date)} → {formatDate(sprint.end_date)}
                 </p>
               </div>
-              <div className="flex items-center gap-3">
-                <button onClick={() => { setEditingSprint(sprint); setShowForm(true) }}
-                  className="text-blue-600 hover:underline text-sm">Editar</button>
-                <button onClick={() => handleDelete(sprint.id)}
-                  className="text-red-600 hover:underline text-sm">Remover</button>
+              <div className="flex flex-col items-end gap-1.5">
+                {/* Atalhos rápidos de mudança de status (sem abrir modal) */}
+                {sprint.status === 'planning' && (
+                  <button onClick={() => setStatus(sprint, 'active')}
+                    className="text-xs bg-green-100 text-green-700 hover:bg-green-200 px-2 py-1 rounded">
+                    ▶ Iniciar
+                  </button>
+                )}
+                {sprint.status === 'active' && (
+                  <button onClick={() => setStatus(sprint, 'completed')}
+                    className="text-xs bg-gray-100 text-gray-700 hover:bg-gray-200 px-2 py-1 rounded">
+                    ✓ Concluir
+                  </button>
+                )}
+                <div className="flex gap-2 text-xs">
+                  <button onClick={() => { setEditingSprint(sprint); setShowForm(true) }}
+                    className="text-blue-600 hover:underline">Editar</button>
+                  <button onClick={() => handleDelete(sprint.id)}
+                    className="text-red-600 hover:underline">Remover</button>
+                </div>
               </div>
             </div>
           </div>
@@ -124,7 +160,7 @@ export default function Sprints({ token, projectId, onBack }: SprintsProps) {
       {showForm && (
         <SprintForm token={token} projectId={projectId} sprint={editingSprint}
           onClose={() => setShowForm(false)}
-          onSaved={() => { setShowForm(false); fetchSprints() }} />
+          onSaved={() => { setShowForm(false); fetchSprints(); onSprintsChanged?.() }} />
       )}
     </div>
   )
