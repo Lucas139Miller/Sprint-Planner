@@ -141,4 +141,59 @@ Responda em markdown, conciso (máx 250 palavras). Sem preâmbulo.`;
   }
 });
 
+// POST /api/ai/project-onboarding
+// Conversa multi-turno para refinar a ideia do projeto e gerar histórias iniciais.
+// Body: { projectName, projectDescription, messages: [{role, content}] }
+// Retorna ou uma próxima pergunta { done: false, message } ou as histórias finais
+// { done: true, stories: [...] }. O modelo decide quando tem contexto suficiente.
+router.post('/project-onboarding', async (req, res) => {
+  const { projectName, projectDescription, messages = [] } = req.body;
+  if (!projectDescription) return res.status(400).json({ error: 'projectDescription é obrigatório' });
+
+  // Conta turnos do usuário para forçar geração de histórias após 3-4 trocas.
+  // Sem isso, o modelo às vezes faz perguntas indefinidamente.
+  const userTurns = messages.filter(m => m.role === 'user').length;
+  const shouldGenerate = userTurns >= 3;
+
+  const systemInstruction = shouldGenerate
+    ? `Baseado na conversa, gere 4-6 histórias de usuário para iniciar o backlog.
+Responda APENAS com JSON válido (sem markdown, sem texto antes/depois):
+{"done":true,"stories":[{"title":"Como X, quero Y para Z","description":"...","story_points":3,"label":"feature"}]}
+- title: formato "Como [papel], quero [ação] para [benefício]"
+- story_points: 1, 2, 3, 5, 8 ou 13 (Fibonacci)
+- label: "feature", "bug" ou "tech_debt"`
+    : `Faça UMA pergunta curta e objetiva para entender melhor o projeto.
+Foque em: tipo de usuário, funcionalidade essencial, prioridades, ou prazo.
+Responda APENAS com a pergunta em texto natural (sem JSON, sem listas, máximo 2 frases).`;
+
+  const conversationText = messages.length > 0
+    ? messages.map(m => `${m.role === 'user' ? 'Usuário' : 'Você'}: ${m.content}`).join('\n')
+    : '(início da conversa)';
+
+  const prompt = `Você é um Product Owner ajudando alguém a criar um novo projeto Scrum chamado "${projectName || 'Sem nome'}".
+
+Descrição inicial: "${projectDescription}"
+
+Conversa até agora:
+${conversationText}
+
+Tarefa atual: ${systemInstruction}`;
+
+  try {
+    const text = await callGemini(prompt);
+    // Tenta parsear como JSON (caso o modelo tenha gerado histórias)
+    if (shouldGenerate) {
+      const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      try {
+        const parsed = JSON.parse(cleaned);
+        if (parsed.stories) return res.json({ done: true, stories: parsed.stories });
+      } catch { /* fallback abaixo se parsing falhou */ }
+    }
+    // Resposta natural (próxima pergunta)
+    res.json({ done: false, message: text.trim() });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro na conversa com IA', details: err.message });
+  }
+});
+
 module.exports = router;
