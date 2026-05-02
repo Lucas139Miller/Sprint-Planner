@@ -103,5 +103,43 @@ db.exec(`
   )
 `);
 
+// Tabela de sprints - cada sprint pertence a um projeto (US4)
+// Por que ter uma tabela separada? Sprints têm ciclo de vida próprio (planejamento,
+// execução, encerramento) e datas que delimitam o período em que o time vai trabalhar
+// nas histórias selecionadas. Histórias do backlog "entram" no sprint pelo sprint_id.
+// - name: nome curto do sprint (ex: "Sprint 1")
+// - goal: objetivo/meta do sprint (frase que resume o que o time pretende entregar)
+// - start_date e end_date: datas limites do sprint (ISO YYYY-MM-DD)
+// - status: estado atual do sprint
+//   - 'planning': planejamento (ainda escolhendo histórias)
+//   - 'active': em andamento (time executando)
+//   - 'completed': encerrado (histórias finalizadas/devolvidas ao backlog)
+// - CHECK garante que só os 3 status válidos são aceitos no nível do banco
+db.exec(`
+  CREATE TABLE IF NOT EXISTS sprints (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id INTEGER NOT NULL,
+    name TEXT NOT NULL,
+    goal TEXT,
+    start_date TEXT,
+    end_date TEXT,
+    status TEXT NOT NULL DEFAULT 'planning' CHECK(status IN ('planning', 'active', 'completed')),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (project_id) REFERENCES projects(id)
+  )
+`);
+
+// Migração: adiciona coluna assignee_id em user_stories (US6 - Kanban)
+// Por que ALTER TABLE em vez de incluir no CREATE? Porque a tabela já existe em
+// instalações antigas e CREATE TABLE IF NOT EXISTS não altera schema existente.
+// SQLite não suporta `ADD COLUMN IF NOT EXISTS`, então usamos try/catch:
+// se a coluna já existir, o ALTER lança erro e ignoramos silenciosamente.
+// Isso torna a migração idempotente (segura para rodar múltiplas vezes).
+try {
+  db.exec(`ALTER TABLE user_stories ADD COLUMN assignee_id INTEGER REFERENCES users(id)`);
+} catch (err) {
+  // Coluna já existe (erro esperado em execuções subsequentes) - ignora silenciosamente
+}
+
 // Exporta a conexão do banco para ser usada em outros arquivos
 module.exports = db;

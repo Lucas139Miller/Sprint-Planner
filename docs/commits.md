@@ -947,3 +947,32 @@ graph TB
 - **stopPropagation**: clique dentro do form não fecha o modal (só clique no overlay)
 - **Fibonacci para pontos**: padrão Scrum (0, 1, 2, 3, 5, 8, 13, 21)
 - **Mesmo form para criar/editar**: prop `story` decide POST vs PUT
+
+---
+
+## Commit 24 — Adiciona tabela sprints para gestão de ciclos (US4)
+
+**O que foi feito:** Criou a tabela `sprints` no banco. Sprints são o ciclo de trabalho do time Scrum, têm datas, meta e status (planning/active/completed). Histórias do backlog passarão a ter `sprint_id` apontando para esta tabela na US5.
+
+**Arquivos modificados:** `backend/src/database.js`
+
+```mermaid
+erDiagram
+    projects ||--o{ sprints : "tem ciclos"
+    sprints ||--o{ user_stories : "(US5) recebe histórias"
+    sprints {
+        int id PK
+        int project_id FK
+        string name "Sprint 1"
+        string goal "Meta do sprint"
+        string start_date "YYYY-MM-DD"
+        string end_date "YYYY-MM-DD"
+        string status "planning|active|completed"
+        datetime created_at
+    }
+```
+
+**Conceitos introduzidos:**
+- **Status como enum via CHECK**: 3 estados válidos garantidos no banco
+- **Datas como TEXT (ISO)**: SQLite armazena datas como string YYYY-MM-DD (formato lex-ordenável)
+- **DEFAULT 'planning'**: sprint nasce em planejamento (status inicial natural)
