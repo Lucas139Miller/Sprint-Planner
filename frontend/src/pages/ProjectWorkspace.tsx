@@ -3,13 +3,12 @@ import { apiFetch, ApiError } from '../api'
 import Backlog from './Backlog'
 import Sprints from './Sprints'
 import KanbanBoard from './KanbanBoard'
-import Dashboard from './Dashboard'
 import MembersModal from './MembersModal'
 
 // Workspace de um projeto - inspirado em Jira/Linear.
-// Tabs no topo (Backlog, Sprints, Board, Dashboard) e sprint selector contextual.
+// Tabs no topo (Backlog, Sprints, Board) e sprint selector para o Board.
 // Membros viraram um modal acionado por ícone pequeno no header.
-type Tab = 'backlog' | 'sprints' | 'board' | 'dashboard'
+type Tab = 'backlog' | 'sprints' | 'board'
 
 interface Sprint { id: number; name: string; status: string }
 interface Project { id: number; name: string }
@@ -72,17 +71,13 @@ export default function ProjectWorkspace({ token, projectId, onBack }: ProjectWo
         </div>
       )
     }
-    if (tab === 'board') {
-      return <KanbanBoard token={token} projectId={projectId} sprintId={selectedSprintId} onBack={() => {}} embedded />
-    }
-    return <Dashboard token={token} projectId={projectId} sprintId={selectedSprintId} onBack={() => {}} embedded />
+    return <KanbanBoard token={token} projectId={projectId} sprintId={selectedSprintId} onBack={() => {}} embedded />
   }
 
   const tabs: { key: Tab; label: string; icon: string }[] = [
     { key: 'backlog', label: 'Backlog', icon: '📋' },
     { key: 'sprints', label: 'Sprints', icon: '🏃' },
     { key: 'board', label: 'Board', icon: '📊' },
-    { key: 'dashboard', label: 'Dashboard', icon: '📈' },
   ]
 
   return (
@@ -116,8 +111,8 @@ export default function ProjectWorkspace({ token, projectId, onBack }: ProjectWo
           ))}
         </div>
 
-        {/* Sprint selector aparece só para tabs que precisam (Board e Dashboard) */}
-        {(tab === 'board' || tab === 'dashboard') && sprints.length > 0 && (
+        {/* Sprint selector aparece só na tab Board */}
+        {tab === 'board' && sprints.length > 0 && (
           <div className="flex items-center gap-2 text-sm pb-2">
             <label className="text-gray-600">Sprint:</label>
             <select value={selectedSprintId || ''}
