@@ -87,12 +87,16 @@ sprint-planner/
 | GET | `/api/invitations` | Listar convites pendentes do usuário | - | JWT |
 | POST | `/api/invitations/:id/accept` | Aceitar convite (vira membro) | - | JWT (invitee) |
 | POST | `/api/invitations/:id/reject` | Rejeitar convite | - | JWT (invitee) |
+| POST | `/api/projects/:id/stories` | Cria história no backlog | `{ title, description?, story_points?, label? }` | JWT (membro) |
+| GET | `/api/projects/:id/stories` | Lista histórias do backlog | `?include=all` (opcional) | JWT (membro) |
+| PUT | `/api/stories/:id` | Atualiza história (parcial) | qualquer campo | JWT (membro) |
+| DELETE | `/api/stories/:id` | Remove história | - | JWT (membro) |
 
 ## Histórias de Usuário (Roadmap)
 
 - [x] **US1**: Criar conta e fazer login
 - [x] **US2**: Criar projeto e convidar membros
-- [ ] **US3**: Adicionar histórias ao backlog (PO)
+- [x] **US3**: Adicionar histórias ao backlog (PO)
 - [ ] **US4**: Criar sprint com datas
 - [ ] **US5**: Mover histórias do backlog para o sprint
 - [ ] **US6**: Board Kanban (To Do / In Progress / In Review / Done)
