@@ -11,10 +11,11 @@ interface Member {
 interface ProjectDetailProps {
   token: string
   projectId: number
-  onBack: () => void     // Volta para lista de projetos
+  onBack: () => void           // Volta para lista de projetos
+  onOpenBacklog: () => void    // Abre o backlog do projeto
 }
 
-export default function ProjectDetail({ token, projectId, onBack }: ProjectDetailProps) {
+export default function ProjectDetail({ token, projectId, onBack, onOpenBacklog }: ProjectDetailProps) {
   const [members, setMembers] = useState<Member[]>([])
   const [identifier, setIdentifier] = useState('')   // Email ou username do convidado
   const [role, setRole] = useState('Dev')            // Papel padrão
@@ -69,7 +70,13 @@ export default function ProjectDetail({ token, projectId, onBack }: ProjectDetai
         ← Voltar aos projetos
       </button>
 
-      <h2 className="text-2xl font-bold text-gray-800 mb-6">Membros do Projeto</h2>
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold text-gray-800">Membros do Projeto</h2>
+        <button onClick={onOpenBacklog}
+          className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700">
+          📋 Abrir Backlog
+        </button>
+      </div>
 
       {/* Lista de membros atuais */}
       <div className="bg-white rounded-lg shadow border border-gray-200 mb-6">

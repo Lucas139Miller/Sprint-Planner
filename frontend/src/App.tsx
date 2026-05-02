@@ -5,6 +5,7 @@ import Projects from './pages/Projects'
 import CreateProject from './pages/CreateProject'
 import ProjectDetail from './pages/ProjectDetail'
 import InvitationsPanel from './pages/InvitationsPanel'
+import Backlog from './pages/Backlog'
 
 // Tipo que define a estrutura dos dados do usuário
 interface User {
@@ -22,7 +23,7 @@ function App() {
   const [user, setUser] = useState<User | null>(null)
 
   // Controla qual página mostrar dentro do app
-  const [page, setPage] = useState<'login' | 'register' | 'projects' | 'create-project' | 'project-detail'>('login')
+  const [page, setPage] = useState<'login' | 'register' | 'projects' | 'create-project' | 'project-detail' | 'backlog'>('login')
 
   // ID do projeto selecionado para a tela de detalhes
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null)
@@ -120,9 +121,15 @@ function App() {
         {page === 'project-detail' && selectedProjectId && (
           <ProjectDetail token={token}
             projectId={selectedProjectId}
-            onBack={() => setPage('projects')} />
+            onBack={() => setPage('projects')}
+            onOpenBacklog={() => setPage('backlog')} />
         )}
-        {(page === 'projects' || (page !== 'create-project' && page !== 'project-detail')) && (
+        {page === 'backlog' && selectedProjectId && (
+          <Backlog token={token}
+            projectId={selectedProjectId}
+            onBack={() => setPage('project-detail')} />
+        )}
+        {(page === 'projects' || (page !== 'create-project' && page !== 'project-detail' && page !== 'backlog')) && (
           <Projects token={token}
             onCreateProject={() => setPage('create-project')}
             onSelectProject={(id) => { setSelectedProjectId(id); setPage('project-detail') }} />
