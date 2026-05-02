@@ -826,3 +826,39 @@ erDiagram
 - **CHECK constraints**: garante valores válidos para label e status
 - **sprint_id NULLable**: NULL significa "ainda no backlog", preenchido = está em sprint
 - **priority**: campo numérico para drag & drop reordenar (US3 final)
+
+---
+
+## Commit 21 — Adiciona rotas POST e GET de histórias (backlog)
+
+**O que foi feito:** Criou `routes/stories.js` com endpoints para criar e listar histórias do backlog. Apenas membros do projeto podem usar. Histórias novas vão para o final do backlog (priority crescente).
+
+**Arquivos criados:** `backend/src/routes/stories.js`  
+**Arquivos modificados:** `backend/src/server.js`
+
+```mermaid
+graph TB
+    subgraph Routes["routes/stories.js"]
+        Helper["isMember(projectId, userId)<br/>Helper para validação"]
+
+        POST["POST /api/projects/:id/stories"]
+        GET["GET /api/projects/:id/stories<br/>?include=all (default: backlog only)"]
+
+        POST -->|"chama"| Helper
+        GET -->|"chama"| Helper
+    end
+
+    POST -->|"calcula priority = MAX+1"| MaxQuery["SELECT MAX(priority)"]
+    POST -->|"INSERT"| Stories[("user_stories")]
+    GET -->|"SELECT WHERE sprint_id IS NULL<br/>ORDER BY priority"| Stories
+
+    style Helper fill:#7c3aed,color:#fff
+    style POST fill:#5cb85c,color:#fff
+    style GET fill:#4a90d9,color:#fff
+```
+
+**Conceitos introduzidos:**
+- **Helper isMember**: extrai validação de acesso comum em uma função reutilizável
+- **Auto-priority**: priority = MAX+1 garante ordem cronológica de adição
+- **Filtro condicional via query**: `?include=all` muda comportamento sem criar nova rota
+- **Mount em /api**: necessário porque a URL é `/api/projects/:id/stories` (aninhada)

@@ -5,6 +5,7 @@ const cors = require('cors');
 const authRoutes = require('./routes/auth');
 const projectRoutes = require('./routes/projects');
 const invitationRoutes = require('./routes/invitations');
+const storyRoutes = require('./routes/stories');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -21,10 +22,13 @@ app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/invitations', invitationRoutes);
 
-// Rota simples para verificar se o servidor está no ar
+// Rota simples para verificar se o servidor está no ar (deve vir ANTES do mount de /api)
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });
 });
+
+// Mount no /api para suportar /projects/:id/stories (rotas aninhadas)
+app.use('/api', storyRoutes);
 
 // Inicia o servidor HTTP na porta definida
 app.listen(PORT, () => {
