@@ -1338,3 +1338,55 @@ graph LR
 - **Reuso do selectedSprintId**: mesmo estado do Dashboard/SprintBoard, evita variaveis paralelas
 - **Botao temporario fixo**: `onOpenKanban(1)` simplifica testes manuais ate a UI ter selecao real
 - **Roadmap atualizado**: US6 [x] marca a feature completa (backend + frontend + integracao)
+
+---
+
+## Commit 38 — Migra banco de dados de SQLite para Supabase (PostgreSQL)
+
+**O que foi feito:** Migrou todo o banco de SQLite local para Supabase. Criou schema com prefixo `sp_` no Supabase (6 tabelas + índices). Reescreveu `database.js` e todas as 6 rotas para usar `@supabase/supabase-js` com queries assíncronas. Adicionou variáveis de ambiente via `.env`.
+
+**Arquivos modificados:**
+- `backend/src/database.js` — agora exporta cliente Supabase
+- `backend/src/routes/auth.js`, `projects.js`, `invitations.js`, `stories.js`, `sprints.js`, `dashboard.js` — todas async
+- `backend/.env`, `backend/.env.example` — credenciais Supabase
+- `backend/package.json` — `@supabase/supabase-js` + `dotenv` adicionados, `better-sqlite3` removido
+- `CLAUDE.md` — atualizado com info do Supabase
+
+```mermaid
+graph LR
+    subgraph Antes["❌ Antes - SQLite local"]
+        SQLite[("sprint_planner.db<br/>arquivo local")]
+        Sync["queries síncronas<br/>db.prepare(SQL).get()"]
+        Sync --> SQLite
+    end
+
+    subgraph Depois["✅ Depois - Supabase"]
+        SupaClient["@supabase/supabase-js"]
+        Async["queries assíncronas<br/>await supabase.from('sp_users').select()"]
+        SupaCloud[("Supabase Postgres<br/>nuvem")]
+        Async --> SupaClient --> SupaCloud
+    end
+
+    Antes -->|"Migração"| Depois
+
+    subgraph Tabelas["Tabelas no Supabase (prefixo sp_)"]
+        T1["sp_users"]
+        T2["sp_projects"]
+        T3["sp_project_members"]
+        T4["sp_invitations"]
+        T5["sp_sprints"]
+        T6["sp_user_stories"]
+    end
+
+    SupaCloud --> Tabelas
+
+    style SQLite fill:#d9534f,color:#fff
+    style SupaCloud fill:#3ECF8E,color:#fff
+    style Async fill:#5cb85c,color:#fff
+```
+
+**Conceitos introduzidos:**
+- **PostgreSQL na nuvem**: dados persistem globalmente, acessíveis de qualquer lugar
+- **Cliente assíncrono**: todas as rotas viraram async/await (era síncrono no SQLite)
+- **FK com ON DELETE CASCADE**: deletar projeto remove members, sprints e stories automaticamente
+- **Variáveis de ambiente**: credenciais isoladas em `.env` (não commitado)

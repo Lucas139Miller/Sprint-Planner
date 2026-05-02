@@ -1,107 +1,80 @@
 const express = require('express');
-const db = require('../database');
+const supabase = require('../database');
 const authMiddleware = require('../middleware/auth');
 
 const router = express.Router();
-// Aplica JWT em todas as rotas deste router (todas exigem login)
 router.use(authMiddleware);
 
-// Helper: verifica se o usuário é membro do projeto
-// Mesma lógica usada em stories.js - sprints só podem ser geridos por membros
-function isMember(projectId, userId) {
-  return db.prepare(
-    'SELECT 1 FROM project_members WHERE project_id = ? AND user_id = ?'
-  ).get(projectId, userId);
+// Helper async: verifica membership no projeto
+async function isMember(projectId, userId) {
+  const { data } = await supabase.from('sp_project_members')
+    .select('id').eq('project_id', projectId).eq('user_id', userId).maybeSingle();
+  return !!data;
 }
 
-// Helper: busca um sprint + valida que o usuário é membro do projeto dele
-// Retorna { sprint, error } - se error existe, deve responder com error
-// Pattern reutilizado de stories.js para manter validação consistente
-function getSprintAndCheckAccess(sprintId, userId) {
-  const sprint = db.prepare('SELECT * FROM sprints WHERE id = ?').get(sprintId);
+// Helper async: busca sprint + valida acesso
+async function getSprintAndCheckAccess(sprintId, userId) {
+  const { data: sprint } = await supabase.from('sp_sprints')
+    .select('*').eq('id', sprintId).maybeSingle();
   if (!sprint) return { error: { status: 404, message: 'Sprint não encontrado' } };
-  if (!isMember(sprint.project_id, userId)) {
+  if (!(await isMember(sprint.project_id, userId))) {
     return { error: { status: 403, message: 'Você não é membro deste projeto' } };
   }
   return { sprint };
 }
 
-// POST /api/projects/:projectId/sprints - Cria um novo sprint
-// Apenas membros do projeto podem criar sprints (qualquer papel)
-router.post('/projects/:projectId/sprints', (req, res) => {
+// POST /api/projects/:projectId/sprints - Cria sprint
+router.post('/projects/:projectId/sprints', async (req, res) => {
   const { projectId } = req.params;
   const { name, goal, start_date, end_date, status } = req.body;
-
-  if (!name) {
-    return res.status(400).json({ error: 'Nome é obrigatório' });
-  }
-
-  // Garante que o usuário tem acesso ao projeto antes de criar
-  if (!isMember(projectId, req.user.id)) {
+  if (!name) return res.status(400).json({ error: 'Nome é obrigatório' });
+  if (!(await isMember(projectId, req.user.id))) {
     return res.status(403).json({ error: 'Você não é membro deste projeto' });
   }
 
-  // status é opcional no body - default 'planning' é aplicado pelo banco
-  const result = db.prepare(`
-    INSERT INTO sprints (project_id, name, goal, start_date, end_date, status)
-    VALUES (?, ?, ?, ?, ?, COALESCE(?, 'planning'))
-  `).run(projectId, name, goal || '', start_date || null, end_date || null, status || null);
+  // status default 'planning' é aplicado pelo banco se não for enviado
+  const insertObj = { project_id: Number(projectId), name, goal: goal || '' };
+  if (start_date) insertObj.start_date = start_date;
+  if (end_date) insertObj.end_date = end_date;
+  if (status) insertObj.status = status;
 
-  // Retorna o sprint completo (busca de novo para pegar created_at e status default)
-  const sprint = db.prepare('SELECT * FROM sprints WHERE id = ?').get(result.lastInsertRowid);
+  const { data: sprint, error } = await supabase.from('sp_sprints').insert(insertObj).select().single();
+  if (error) return res.status(500).json({ error: 'Erro ao criar sprint' });
   res.status(201).json(sprint);
 });
 
-// GET /api/projects/:projectId/sprints - Lista sprints do projeto
-// Ordena por created_at DESC (mais recente primeiro - sprints ativos costumam ser os recentes)
-router.get('/projects/:projectId/sprints', (req, res) => {
+// GET /api/projects/:projectId/sprints - Lista sprints (DESC por created_at)
+router.get('/projects/:projectId/sprints', async (req, res) => {
   const { projectId } = req.params;
-
-  if (!isMember(projectId, req.user.id)) {
+  if (!(await isMember(projectId, req.user.id))) {
     return res.status(403).json({ error: 'Você não é membro deste projeto' });
   }
-
-  const sprints = db.prepare(`
-    SELECT * FROM sprints
-    WHERE project_id = ?
-    ORDER BY created_at DESC
-  `).all(projectId);
-
-  res.json(sprints);
+  const { data } = await supabase.from('sp_sprints')
+    .select('*').eq('project_id', projectId).order('created_at', { ascending: false });
+  res.json(data || []);
 });
 
-// PUT /api/sprints/:id - Atualiza um sprint (parcial)
-// Aceita campos parciais via COALESCE - mesmo padrão de stories.js
-router.put('/sprints/:id', (req, res) => {
-  const { sprint, error } = getSprintAndCheckAccess(req.params.id, req.user.id);
-  if (error) return res.status(error.status).json({ error: error.message });
+// PUT /api/sprints/:id - Atualização parcial
+router.put('/sprints/:id', async (req, res) => {
+  const { sprint, error: errAccess } = await getSprintAndCheckAccess(req.params.id, req.user.id);
+  if (errAccess) return res.status(errAccess.status).json({ error: errAccess.message });
 
-  const { name, goal, start_date, end_date, status } = req.body;
+  // Só inclui campos que foram enviados (undefined some no objeto Supabase)
+  const updates = {};
+  ['name', 'goal', 'start_date', 'end_date', 'status'].forEach(k => {
+    if (req.body[k] !== undefined) updates[k] = req.body[k];
+  });
 
-  // COALESCE: usa o novo valor se enviado, mantém o antigo se ausente (NULL)
-  // Permite atualizar só o status (start/active/completed) sem reenviar todo o sprint
-  db.prepare(`
-    UPDATE sprints SET
-      name = COALESCE(?, name),
-      goal = COALESCE(?, goal),
-      start_date = COALESCE(?, start_date),
-      end_date = COALESCE(?, end_date),
-      status = COALESCE(?, status)
-    WHERE id = ?
-  `).run(name, goal, start_date, end_date, status, sprint.id);
-
-  const updated = db.prepare('SELECT * FROM sprints WHERE id = ?').get(sprint.id);
+  const { data: updated } = await supabase.from('sp_sprints')
+    .update(updates).eq('id', sprint.id).select().single();
   res.json(updated);
 });
 
-// DELETE /api/sprints/:id - Remove um sprint
-// Histórias com sprint_id apontando pra ele ficam órfãs (sprint_id passa a ser inválido)
-// Em US futura podemos limpar sprint_id das histórias antes de deletar
-router.delete('/sprints/:id', (req, res) => {
-  const { sprint, error } = getSprintAndCheckAccess(req.params.id, req.user.id);
-  if (error) return res.status(error.status).json({ error: error.message });
-
-  db.prepare('DELETE FROM sprints WHERE id = ?').run(sprint.id);
+// DELETE /api/sprints/:id
+router.delete('/sprints/:id', async (req, res) => {
+  const { sprint, error: errAccess } = await getSprintAndCheckAccess(req.params.id, req.user.id);
+  if (errAccess) return res.status(errAccess.status).json({ error: errAccess.message });
+  await supabase.from('sp_sprints').delete().eq('id', sprint.id);
   res.json({ success: true });
 });
 

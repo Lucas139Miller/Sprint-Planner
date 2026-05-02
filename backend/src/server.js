@@ -3,7 +3,7 @@ const express = require('express');
 // Sem isso, o navegador bloqueia as requisições por segurança (Same-Origin Policy)
 const cors = require('cors');
 const authRoutes = require('./routes/auth');
-const projectRoutes = require('./routes/projects');
+const { router: projectRoutes } = require('./routes/projects');
 const invitationRoutes = require('./routes/invitations');
 const storyRoutes = require('./routes/stories');
 const sprintRoutes = require('./routes/sprints');

@@ -16,11 +16,12 @@ Aplicação web para times pequenos gerenciarem sprints de forma intuitiva, com 
 |--------|-----------|
 | Frontend | React 18 + TypeScript, Tailwind CSS v3, Vite 5 |
 | Backend | Node.js + Express 4, API REST |
-| Banco | SQLite via better-sqlite3 |
+| Banco | Supabase (PostgreSQL) via @supabase/supabase-js |
 | Auth | bcrypt (hash de senhas) + JWT (tokens) |
 | IA | Claude API (Anthropic) - features do produto |
 
 > **Nota**: Node.js 20.18 requer Vite 5 (não Vite 6+). Tailwind v3 usa PostCSS (não plugin Vite).
+> **Banco**: Tabelas no Supabase com prefixo `sp_` (sp_users, sp_projects, sp_project_members, sp_invitations, sp_sprints, sp_user_stories) para evitar conflito com outras tabelas no mesmo projeto. Configurar `.env` com `SUPABASE_URL` e `SUPABASE_KEY`.
 
 ## Estrutura do Projeto
 

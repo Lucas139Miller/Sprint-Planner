@@ -1,145 +1,123 @@
 const express = require('express');
-const db = require('../database');
+const supabase = require('../database');
 const authMiddleware = require('../middleware/auth');
 
 const router = express.Router();
-
-// Todas as rotas deste arquivo exigem autenticação
-// O middleware verifica o JWT e coloca os dados do usuário em req.user
 router.use(authMiddleware);
 
-// POST /api/projects - Cria um novo projeto
-// O usuário logado se torna o dono (owner) e é adicionado automaticamente como PO
-router.post('/', (req, res) => {
+// Helper async: verifica se o usuário é membro do projeto
+async function isMember(projectId, userId) {
+  const { data } = await supabase
+    .from('sp_project_members')
+    .select('id')
+    .eq('project_id', projectId)
+    .eq('user_id', userId)
+    .maybeSingle();
+  return !!data;
+}
+
+// POST /api/projects - Cria projeto e adiciona criador como PO
+router.post('/', async (req, res) => {
   const { name, description } = req.body;
+  if (!name) return res.status(400).json({ error: 'Nome do projeto é obrigatório' });
 
-  if (!name) {
-    return res.status(400).json({ error: 'Nome do projeto é obrigatório' });
-  }
+  const { data: project, error } = await supabase
+    .from('sp_projects')
+    .insert({ name, description: description || '', owner_id: req.user.id })
+    .select()
+    .single();
 
-  try {
-    // Insere o projeto com o owner_id do usuário autenticado
-    const project = db.prepare(
-      'INSERT INTO projects (name, description, owner_id) VALUES (?, ?, ?)'
-    ).run(name, description || '', req.user.id);
+  if (error) return res.status(500).json({ error: 'Erro ao criar projeto' });
 
-    // Adiciona o criador como membro com papel PO automaticamente
-    // Assim todo projeto já nasce com pelo menos um membro
-    db.prepare(
-      'INSERT INTO project_members (project_id, user_id, role) VALUES (?, ?, ?)'
-    ).run(project.lastInsertRowid, req.user.id, 'PO');
+  // Insere o criador como PO automaticamente
+  await supabase.from('sp_project_members').insert({
+    project_id: project.id, user_id: req.user.id, role: 'PO',
+  });
 
-    res.status(201).json({
-      id: project.lastInsertRowid,
-      name,
-      description: description || '',
-      owner_id: req.user.id,
-      role: 'PO',
-    });
-  } catch {
-    res.status(500).json({ error: 'Erro ao criar projeto' });
-  }
+  res.status(201).json({ ...project, role: 'PO' });
 });
 
-// GET /api/projects - Lista projetos do usuário logado
-// Retorna todos os projetos onde o usuário é dono OU membro
-router.get('/', (req, res) => {
-  // JOIN com project_members para buscar o papel do usuário em cada projeto
-  // WHERE filtra apenas projetos onde o usuário logado é membro
-  const projects = db.prepare(`
-    SELECT p.id, p.name, p.description, p.owner_id, p.created_at, pm.role
-    FROM projects p
-    INNER JOIN project_members pm ON pm.project_id = p.id
-    WHERE pm.user_id = ?
-    ORDER BY p.created_at DESC
-  `).all(req.user.id);
+// GET /api/projects - Lista projetos do usuário (onde é membro)
+// Faz 2 queries: 1) memberships do user, 2) projetos com esses ids
+router.get('/', async (req, res) => {
+  const { data: memberships } = await supabase
+    .from('sp_project_members')
+    .select('project_id, role')
+    .eq('user_id', req.user.id);
 
-  res.json(projects);
+  if (!memberships || memberships.length === 0) return res.json([]);
+
+  const ids = memberships.map(m => m.project_id);
+  const { data: projects } = await supabase
+    .from('sp_projects').select('*').in('id', ids).order('created_at', { ascending: false });
+
+  // Anexa o role de cada projeto a partir do array de memberships
+  const result = (projects || []).map(p => ({
+    ...p, role: memberships.find(m => m.project_id === p.id).role,
+  }));
+  res.json(result);
 });
 
-// POST /api/projects/:id/members - Convida um membro ao projeto
-// Apenas o dono do projeto pode convidar. Busca o usuário por email ou username.
-router.post('/:id/members', (req, res) => {
+// POST /api/projects/:id/members - Convida membro (cria invitation pending)
+router.post('/:id/members', async (req, res) => {
   const { identifier, role } = req.body;
   const projectId = req.params.id;
 
-  // Valida campos obrigatórios
-  if (!identifier || !role) {
-    return res.status(400).json({ error: 'Identificador e papel são obrigatórios' });
-  }
+  if (!identifier || !role) return res.status(400).json({ error: 'Identificador e papel são obrigatórios' });
 
-  // Verifica se o usuário logado é o dono do projeto
-  const project = db.prepare('SELECT * FROM projects WHERE id = ? AND owner_id = ?')
-    .get(projectId, req.user.id);
+  // Apenas o dono pode convidar
+  const { data: project } = await supabase
+    .from('sp_projects').select('*').eq('id', projectId).eq('owner_id', req.user.id).maybeSingle();
+  if (!project) return res.status(403).json({ error: 'Apenas o dono do projeto pode convidar membros' });
 
-  if (!project) {
-    return res.status(403).json({ error: 'Apenas o dono do projeto pode convidar membros' });
-  }
+  // Busca usuário por email OU username
+  const { data: invitedUser } = await supabase
+    .from('sp_users').select('*').or(`email.eq.${identifier},username.eq.${identifier}`).maybeSingle();
+  if (!invitedUser) return res.status(404).json({ error: 'Usuário não encontrado' });
 
-  // Busca o usuário convidado por email primeiro, depois por username
-  const invitedUser = db.prepare('SELECT * FROM users WHERE email = ? OR username = ?')
-    .get(identifier, identifier);
-
-  if (!invitedUser) {
-    return res.status(404).json({ error: 'Usuário não encontrado' });
-  }
-
-  // Não pode convidar a si mesmo
   if (invitedUser.id === req.user.id) {
     return res.status(400).json({ error: 'Você não pode se convidar' });
   }
 
-  // Verifica se já é membro do projeto
-  const alreadyMember = db.prepare(
-    'SELECT 1 FROM project_members WHERE project_id = ? AND user_id = ?'
-  ).get(projectId, invitedUser.id);
-  if (alreadyMember) {
+  // Já é membro?
+  if (await isMember(projectId, invitedUser.id)) {
     return res.status(409).json({ error: 'Usuário já é membro deste projeto' });
   }
 
-  // Verifica se já existe um convite pendente para este usuário neste projeto
-  const pendingInvite = db.prepare(
-    "SELECT 1 FROM invitations WHERE project_id = ? AND invitee_id = ? AND status = 'pending'"
-  ).get(projectId, invitedUser.id);
-  if (pendingInvite) {
-    return res.status(409).json({ error: 'Convite pendente já enviado para este usuário' });
-  }
+  // Já tem convite pendente?
+  const { data: pending } = await supabase.from('sp_invitations')
+    .select('id').eq('project_id', projectId).eq('invitee_id', invitedUser.id).eq('status', 'pending').maybeSingle();
+  if (pending) return res.status(409).json({ error: 'Convite pendente já enviado para este usuário' });
 
-  // Cria o convite com status pending
-  const invitation = db.prepare(
-    'INSERT INTO invitations (project_id, inviter_id, invitee_id, role) VALUES (?, ?, ?, ?)'
-  ).run(projectId, req.user.id, invitedUser.id, role);
+  const { data: invite } = await supabase.from('sp_invitations').insert({
+    project_id: projectId, inviter_id: req.user.id, invitee_id: invitedUser.id, role,
+  }).select().single();
 
   res.status(201).json({
-    id: invitation.lastInsertRowid,
+    id: invite.id,
     invitee: { id: invitedUser.id, username: invitedUser.username, email: invitedUser.email },
     role, status: 'pending',
   });
 });
 
-// GET /api/projects/:id/members - Lista membros de um projeto
-// Qualquer membro do projeto pode ver a lista de membros
-router.get('/:id/members', (req, res) => {
+// GET /api/projects/:id/members - Lista membros (qualquer membro pode ver)
+router.get('/:id/members', async (req, res) => {
   const projectId = req.params.id;
-
-  // Verifica se o usuário logado é membro do projeto
-  const isMember = db.prepare(
-    'SELECT 1 FROM project_members WHERE project_id = ? AND user_id = ?'
-  ).get(projectId, req.user.id);
-
-  if (!isMember) {
+  if (!(await isMember(projectId, req.user.id))) {
     return res.status(403).json({ error: 'Você não é membro deste projeto' });
   }
 
-  // JOIN com users para retornar dados do membro (sem a senha!)
-  const members = db.prepare(`
-    SELECT u.id, u.username, u.email, pm.role, pm.invited_at
-    FROM project_members pm
-    INNER JOIN users u ON u.id = pm.user_id
-    WHERE pm.project_id = ?
-  `).all(projectId);
+  // 2 queries: memberships do projeto + dados dos users
+  const { data: members } = await supabase
+    .from('sp_project_members').select('user_id, role, invited_at').eq('project_id', projectId);
+  const userIds = (members || []).map(m => m.user_id);
+  const { data: users } = await supabase.from('sp_users').select('id, username, email').in('id', userIds);
 
-  res.json(members);
+  const result = (users || []).map(u => {
+    const m = members.find(x => x.user_id === u.id);
+    return { ...u, role: m.role, invited_at: m.invited_at };
+  });
+  res.json(result);
 });
 
-module.exports = router;
+module.exports = { router, isMember };
