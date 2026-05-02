@@ -4,6 +4,7 @@ const express = require('express');
 const cors = require('cors');
 const authRoutes = require('./routes/auth');
 const projectRoutes = require('./routes/projects');
+const invitationRoutes = require('./routes/invitations');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -18,6 +19,7 @@ app.use('/api/auth', authRoutes);
 
 // Monta as rotas de projetos no prefixo /api/projects (protegidas por JWT)
 app.use('/api/projects', projectRoutes);
+app.use('/api/invitations', invitationRoutes);
 
 // Rota simples para verificar se o servidor está no ar
 app.get('/api/health', (req, res) => {

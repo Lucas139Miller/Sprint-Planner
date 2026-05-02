@@ -676,3 +676,45 @@ graph TB
 - **Validações em cascata**: cada erro tem código HTTP apropriado e mensagem específica
 - **Auto-convite bloqueado**: 400 se o dono tentar se convidar
 - **Idempotência**: não cria convite duplicado se já existe um pendente
+
+---
+
+## Commit 17 — Adiciona rotas de listar/aceitar/rejeitar convites
+
+**O que foi feito:** Criou `routes/invitations.js` com 3 rotas para o convidado gerenciar seus convites pendentes. Aceitar usa transação SQL para atomicidade.
+
+**Arquivos criados:** `backend/src/routes/invitations.js`  
+**Arquivos modificados:** `backend/src/server.js`
+
+```mermaid
+sequenceDiagram
+    participant Inviter as Alice (Dono)
+    participant API
+    participant DB
+    participant Invitee as Bob (Convidado)
+
+    Inviter->>API: POST /projects/6/members<br/>{ identifier: 'bob', role: 'Dev' }
+    API->>DB: INSERT INTO invitations status='pending'
+
+    Note over Invitee: Bob abre o app
+    Invitee->>API: GET /api/invitations
+    API->>DB: SELECT JOIN projects + users WHERE invitee_id = bob
+    DB-->>API: [{ project_name: 'X', inviter: 'alice', role: 'Dev' }]
+    API-->>Invitee: Lista de convites pendentes
+
+    Invitee->>API: POST /invitations/1/accept
+
+    rect rgb(220, 240, 220)
+        Note over API,DB: Transação atômica
+        API->>DB: UPDATE invitations SET status='accepted'
+        API->>DB: INSERT INTO project_members
+    end
+
+    API-->>Invitee: { success: true }
+    Note over Invitee: Bob agora vê projeto na lista
+```
+
+**Conceitos introduzidos:**
+- **Transação SQL**: `db.transaction()` garante que UPDATE + INSERT executam atomicamente
+- **JOIN triplo**: invitations + projects + users para retornar contexto completo
+- **Idempotência via WHERE**: aceitar/rejeitar duas vezes retorna 404 (não dá erro grave)
