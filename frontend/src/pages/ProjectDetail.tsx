@@ -13,9 +13,10 @@ interface ProjectDetailProps {
   projectId: number
   onBack: () => void           // Volta para lista de projetos
   onOpenBacklog: () => void    // Abre o backlog do projeto
+  onOpenSprints: () => void    // Abre os sprints do projeto (US4)
 }
 
-export default function ProjectDetail({ token, projectId, onBack, onOpenBacklog }: ProjectDetailProps) {
+export default function ProjectDetail({ token, projectId, onBack, onOpenBacklog, onOpenSprints }: ProjectDetailProps) {
   const [members, setMembers] = useState<Member[]>([])
   const [identifier, setIdentifier] = useState('')   // Email ou username do convidado
   const [role, setRole] = useState('Dev')            // Papel padrão
@@ -72,10 +73,18 @@ export default function ProjectDetail({ token, projectId, onBack, onOpenBacklog 
 
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-gray-800">Membros do Projeto</h2>
-        <button onClick={onOpenBacklog}
-          className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700">
-          📋 Abrir Backlog
-        </button>
+        {/* Botões de navegação para as seções do projeto - flex gap mantém espaço entre eles */}
+        <div className="flex gap-2">
+          <button onClick={onOpenBacklog}
+            className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700">
+            📋 Abrir Backlog
+          </button>
+          {/* US4: novo botão para abrir os sprints do projeto */}
+          <button onClick={onOpenSprints}
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+            🏃 Sprints
+          </button>
+        </div>
       </div>
 
       {/* Lista de membros atuais */}
