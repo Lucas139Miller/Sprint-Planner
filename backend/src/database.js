@@ -57,5 +57,25 @@ db.exec(`
   )
 `);
 
+// Tabela de convites pendentes - usuários precisam aceitar antes de virarem membros
+// - inviter_id: quem está convidando (sempre o dono do projeto)
+// - invitee_id: quem foi convidado (precisa aceitar)
+// - status: 'pending' (aguardando), 'accepted' (já virou membro), 'rejected' (recusou)
+// - UNIQUE: impede convites duplicados pendentes para o mesmo par (project, invitee)
+db.exec(`
+  CREATE TABLE IF NOT EXISTS invitations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id INTEGER NOT NULL,
+    inviter_id INTEGER NOT NULL,
+    invitee_id INTEGER NOT NULL,
+    role TEXT NOT NULL CHECK(role IN ('PO', 'Scrum Master', 'Dev')),
+    status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'accepted', 'rejected')),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (project_id) REFERENCES projects(id),
+    FOREIGN KEY (inviter_id) REFERENCES users(id),
+    FOREIGN KEY (invitee_id) REFERENCES users(id)
+  )
+`);
+
 // Exporta a conexão do banco para ser usada em outros arquivos
 module.exports = db;

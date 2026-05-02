@@ -602,3 +602,33 @@ graph TB
 ```
 
 **Resumo da US2:** 7 commits, ~600 linhas, backend completo com auth middleware + CRUD projetos + membros, frontend com 3 novas páginas e navegação por estado.
+
+---
+
+## Commit 15 — Adiciona tabela invitations para convites pendentes
+
+**O que foi feito:** Criou a tabela `invitations` para suportar fluxo de convite com aceitar/rejeitar. Antes, convidar adicionava direto em `project_members` (sem aceitação). Agora será um convite pendente.
+
+**Arquivos modificados:** `backend/src/database.js`
+
+```mermaid
+erDiagram
+    users ||--o{ invitations : "envia (inviter)"
+    users ||--o{ invitations : "recebe (invitee)"
+    projects ||--o{ invitations : "tem"
+    invitations {
+        int id PK
+        int project_id FK
+        int inviter_id FK
+        int invitee_id FK
+        string role "PO|SM|Dev"
+        string status "pending|accepted|rejected"
+        datetime created_at
+    }
+    invitations ||..|| project_members : "vira membro ao aceitar"
+```
+
+**Conceitos introduzidos:**
+- **Status enum**: pending (aguardando), accepted (virou membro), rejected (recusou)
+- **Histórico preservado**: convites rejeitados/aceitos ficam no banco para auditoria
+- **2 FKs ao users**: inviter_id e invitee_id apontam para a mesma tabela
