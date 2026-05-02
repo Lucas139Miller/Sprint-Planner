@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { apiFetch, ApiError } from '../api'
 import SprintForm from './SprintForm'
+import AiSummaryModal from './AiSummaryModal'
 
 export interface Sprint {
   id: number
@@ -27,6 +28,8 @@ export default function Sprints({ token, projectId, onBack, embedded, onSprintsC
   const [error, setError] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [editingSprint, setEditingSprint] = useState<Sprint | null>(null)
+  // Sprint selecionado para o modal de resumo IA (US9)
+  const [aiSprint, setAiSprint] = useState<Sprint | null>(null)
 
   async function fetchSprints() {
     setLoading(true); setError('')
@@ -145,6 +148,11 @@ export default function Sprints({ token, projectId, onBack, embedded, onSprintsC
                     ✓ Concluir
                   </button>
                 )}
+                {/* Resumo IA disponível pra qualquer sprint que já tenha histórias */}
+                <button onClick={() => setAiSprint(sprint)}
+                  className="text-xs bg-purple-100 text-purple-700 hover:bg-purple-200 px-2 py-1 rounded">
+                  ✨ Resumo IA
+                </button>
                 <div className="flex gap-2 text-xs">
                   <button onClick={() => { setEditingSprint(sprint); setShowForm(true) }}
                     className="text-blue-600 hover:underline">Editar</button>
@@ -161,6 +169,11 @@ export default function Sprints({ token, projectId, onBack, embedded, onSprintsC
         <SprintForm token={token} projectId={projectId} sprint={editingSprint}
           onClose={() => setShowForm(false)}
           onSaved={() => { setShowForm(false); fetchSprints(); onSprintsChanged?.() }} />
+      )}
+
+      {aiSprint && (
+        <AiSummaryModal sprintId={aiSprint.id} sprintName={aiSprint.name}
+          onClose={() => setAiSprint(null)} />
       )}
     </div>
   )

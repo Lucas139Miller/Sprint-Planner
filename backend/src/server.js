@@ -8,6 +8,7 @@ const invitationRoutes = require('./routes/invitations');
 const storyRoutes = require('./routes/stories');
 const sprintRoutes = require('./routes/sprints');
 const dashboardRoutes = require('./routes/dashboard');
+const aiRoutes = require('./routes/ai');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -37,6 +38,7 @@ app.use('/api', sprintRoutes);
 
 // Dashboard montado em /api porque tem rotas aninhadas em /sprints e /projects
 app.use('/api', dashboardRoutes);
+app.use('/api/ai', aiRoutes);
 
 // Inicia o servidor HTTP na porta definida
 app.listen(PORT, () => {

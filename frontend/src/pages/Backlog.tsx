@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { apiFetch, ApiError } from '../api'
 import StoryForm from './StoryForm'
+import AiGenerateModal from './AiGenerateModal'
 
 interface Story {
   id: number
@@ -28,6 +29,7 @@ export default function Backlog({ token, projectId, onBack, embedded }: BacklogP
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [showForm, setShowForm] = useState(false)
+  const [showAi, setShowAi] = useState(false)
   const [editingStory, setEditingStory] = useState<Story | null>(null)
   const [viewAll, setViewAll] = useState(false)
 
@@ -106,6 +108,10 @@ export default function Backlog({ token, projectId, onBack, embedded }: BacklogP
             <input type="checkbox" checked={viewAll} onChange={e => setViewAll(e.target.checked)} />
             Mostrar histórias em sprints
           </label>
+          <button onClick={() => setShowAi(true)}
+            className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 text-sm">
+            ✨ Gerar com IA
+          </button>
           <button onClick={() => { setEditingStory(null); setShowForm(true) }}
             className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm">
             + Nova História
@@ -175,6 +181,12 @@ export default function Backlog({ token, projectId, onBack, embedded }: BacklogP
         <StoryForm token={token} projectId={projectId} story={editingStory}
           onClose={() => setShowForm(false)}
           onSaved={() => { setShowForm(false); refresh() }} />
+      )}
+
+      {showAi && (
+        <AiGenerateModal projectId={projectId}
+          onClose={() => setShowAi(false)}
+          onCreated={refresh} />
       )}
     </div>
   )

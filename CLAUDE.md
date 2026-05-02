@@ -18,7 +18,7 @@ Aplicação web para times pequenos gerenciarem sprints de forma intuitiva, com 
 | Backend | Node.js + Express 4, API REST |
 | Banco | Supabase (PostgreSQL) via @supabase/supabase-js |
 | Auth | bcrypt (hash de senhas) + JWT (tokens) |
-| IA | Claude API (Anthropic) - features do produto |
+| IA | Google Gemini (gemini-2.5-flash-lite) - features US8/US9 |
 
 > **Nota**: Node.js 20.18 requer Vite 5 (não Vite 6+). Tailwind v3 usa PostCSS (não plugin Vite).
 > **Banco**: Tabelas no Supabase com prefixo `sp_` (sp_users, sp_projects, sp_project_members, sp_invitations, sp_sprints, sp_user_stories) para evitar conflito com outras tabelas no mesmo projeto. Configurar `.env` com `SUPABASE_URL` e `SUPABASE_KEY`.
@@ -102,6 +102,8 @@ sprint-planner/
 | GET | `/api/sprints/:id/board` | Histórias do sprint agrupadas por status (US6) | - | JWT (membro) |
 | GET | `/api/sprints/:id/dashboard` | Métricas agregadas do sprint (pontos, progresso, status) | - | JWT (membro) |
 | GET | `/api/projects/:id/velocity` | Média de pontos concluídos em sprints passados | - | JWT (membro) |
+| POST | `/api/ai/generate-stories` | Gera 3-6 histórias via Gemini (US8) | `{ description, projectId? }` | JWT |
+| POST | `/api/ai/sprint-summary` | Resumo retrospectivo do sprint via Gemini (US9) | `{ sprintId }` | JWT (membro) |
 
 ## Histórias de Usuário (Roadmap)
 
@@ -112,8 +114,8 @@ sprint-planner/
 - [x] **US5**: Mover histórias do backlog para o sprint
 - [x] **US6**: Board Kanban (To Do / In Progress / In Review / Done)
 - [x] **US7**: Dashboard com progresso do sprint
-- [ ] **US8**: Gerar sugestões de histórias via IA
-- [ ] **US9**: Encerrar sprint com resumo automático por IA
+- [x] **US8**: Gerar sugestões de histórias via IA
+- [x] **US9**: Encerrar sprint com resumo automático por IA
 
 ## Arquitetura (Mermaid)
 
