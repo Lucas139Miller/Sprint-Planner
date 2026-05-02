@@ -6,6 +6,7 @@ const authRoutes = require('./routes/auth');
 const projectRoutes = require('./routes/projects');
 const invitationRoutes = require('./routes/invitations');
 const storyRoutes = require('./routes/stories');
+const sprintRoutes = require('./routes/sprints');
 const dashboardRoutes = require('./routes/dashboard');
 
 const app = express();
@@ -30,6 +31,9 @@ app.get('/api/health', (req, res) => {
 
 // Mount no /api para suportar /projects/:id/stories (rotas aninhadas)
 app.use('/api', storyRoutes);
+
+// Mount em /api - rotas de sprints aninhadas em /projects/:id/sprints e /sprints/:id
+app.use('/api', sprintRoutes);
 
 // Dashboard montado em /api porque tem rotas aninhadas em /sprints e /projects
 app.use('/api', dashboardRoutes);

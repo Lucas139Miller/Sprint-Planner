@@ -119,4 +119,58 @@ router.delete('/stories/:id', (req, res) => {
   res.json({ success: true });
 });
 
+// PUT /api/stories/:id/move-to-sprint - Move uma história entre backlog e sprint
+// Body: { sprint_id: number | null }
+//   - número: move a história para esse sprint
+//   - null: devolve a história para o backlog (sprint_id = NULL)
+// Endpoint dedicado (em vez de reutilizar PUT /stories/:id) porque movimentar
+// é uma ação semanticamente diferente de editar campos da história.
+router.put('/stories/:id/move-to-sprint', (req, res) => {
+  const { story, error } = getStoryAndCheckAccess(req.params.id, req.user.id);
+  if (error) return res.status(error.status).json({ error: error.message });
+
+  // Aceita undefined? Não — exigimos a chave explicitamente, mas null é válido.
+  // hasOwnProperty distingue "não enviou" de "enviou null" (mover para backlog).
+  if (!Object.prototype.hasOwnProperty.call(req.body, 'sprint_id')) {
+    return res.status(400).json({ error: 'sprint_id é obrigatório (use null para voltar ao backlog)' });
+  }
+  const { sprint_id } = req.body;
+
+  // Atualiza o sprint_id da história. Se for null, vai para o backlog.
+  db.prepare('UPDATE user_stories SET sprint_id = ? WHERE id = ?')
+    .run(sprint_id, story.id);
+
+  // Retorna a história atualizada para o frontend refletir o estado novo
+  const updated = db.prepare('SELECT * FROM user_stories WHERE id = ?').get(story.id);
+  res.json(updated);
+});
+
+// GET /api/sprints/:sprintId/stories - Lista histórias atribuídas a um sprint
+// Ordena por priority para manter a ordem do backlog ao mover
+// Validação: usuário precisa ser membro do projeto ao qual o sprint pertence.
+// Como a tabela sprints é construída em paralelo (US4), descobrimos o project_id
+// indiretamente, pegando qualquer história já no sprint. Se ainda não há histórias,
+// não há nada para validar (lista vazia é segura).
+router.get('/sprints/:sprintId/stories', (req, res) => {
+  const { sprintId } = req.params;
+
+  // Busca a primeira história do sprint para descobrir o project_id e checar acesso.
+  // Esta abordagem evita depender da tabela 'sprints' que é criada em paralelo (US4).
+  const sample = db.prepare(
+    'SELECT project_id FROM user_stories WHERE sprint_id = ? LIMIT 1'
+  ).get(sprintId);
+
+  if (sample && !isMember(sample.project_id, req.user.id)) {
+    return res.status(403).json({ error: 'Você não é membro deste projeto' });
+  }
+
+  const stories = db.prepare(`
+    SELECT * FROM user_stories
+    WHERE sprint_id = ?
+    ORDER BY priority ASC
+  `).all(sprintId);
+
+  res.json(stories);
+});
+
 module.exports = router;
