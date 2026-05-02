@@ -1207,3 +1207,46 @@ graph TB
 - **Card reutilizável**: mesma função `renderCard()` cria cards das duas colunas, mudando só o botão
 - **Total de pontos no header**: `reduce` agrega story_points para o PO planejar capacidade
 - **Layout responsivo**: `grid-cols-1 md:grid-cols-2` empilha colunas em telas pequenas
+
+---
+
+## Commit 31 — Adiciona página KanbanBoard com 4 colunas e botões de movimento (US6)
+
+**O que foi feito:** Criou `KanbanBoard.tsx` com 4 colunas (To Do | In Progress | In Review | Done) que consomem `GET /api/sprints/:id/board`. Cada card mostra label, #id, story_points, título e assignee, com botões de seta esquerda/direita que movem para a coluna anterior/seguinte (sem drag-drop ainda). Cabeçalho de cada coluna mostra contagem e total de pontos.
+
+**Arquivos criados:** `frontend/src/pages/KanbanBoard.tsx`
+
+```mermaid
+graph LR
+    subgraph Kanban["KanbanBoard.tsx"]
+        Fetch["fetchBoard()<br/>GET /sprints/:id/board"]
+        State["board: { to_do, in_progress, in_review, done }"]
+        Fetch --> State
+
+        subgraph Cols["4 colunas (lg:grid-cols-4)"]
+            C1["To Do<br/>n cards - X pts"]
+            C2["In Progress<br/>n cards - X pts"]
+            C3["In Review<br/>n cards - X pts"]
+            C4["Done<br/>n cards - X pts"]
+        end
+
+        Card["Card<br/>label - id - pts<br/>titulo<br/>assignee + setas"]
+        State --> C1 & C2 & C3 & C4
+        C1 & C2 & C3 & C4 --> Card
+
+        Card -->|"clica seta"| Move["moveStory(id, status)<br/>PUT /stories/:id/status"]
+        Move --> Fetch
+    end
+
+    style C1 fill:#f3f4f6,stroke:#999
+    style C2 fill:#dbeafe,stroke:#3b82f6
+    style C3 fill:#fef3c7,stroke:#f59e0b
+    style C4 fill:#dcfce7,stroke:#22c55e
+    style Card fill:#fff,stroke:#666
+```
+
+**Conceitos introduzidos:**
+- **COLUMNS array como source-of-truth**: ordem das colunas + lookup de prev/next em um único lugar
+- **Setas no card**: aproximação de drag-drop sem dependência (movimento entre colunas adjacentes)
+- **Disabled em extremos**: seta esquerda desabilitada em To Do, seta direita desabilitada em Done (semântica clara)
+- **Estado inicial vazio**: `{ to_do: [], ... }` permite render imediato antes do fetch terminar
