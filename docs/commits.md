@@ -1250,3 +1250,39 @@ graph LR
 - **Setas no card**: aproximação de drag-drop sem dependência (movimento entre colunas adjacentes)
 - **Disabled em extremos**: seta esquerda desabilitada em To Do, seta direita desabilitada em Done (semântica clara)
 - **Estado inicial vazio**: `{ to_do: [], ... }` permite render imediato antes do fetch terminar
+
+---
+
+## Commit 29 — Adiciona página Dashboard com gráficos (US7)
+
+**O que foi feito:** Criou `Dashboard.tsx` com 4 cards de métricas (Total/Completed/Progress/Stories), pie chart de status, bar chart de contagem e linha de burndown simplificado. Botão "📈 Dashboard (sprint #1)" no Backlog abre a tela; nova página `'dashboard'` no `App.tsx` orquestra a navegação.
+
+**Arquivos criados:** `frontend/src/pages/Dashboard.tsx`
+**Arquivos modificados:** `frontend/src/pages/Backlog.tsx` (botão), `frontend/src/App.tsx` (rota), `CLAUDE.md` (endpoints + US7 [x])
+
+```mermaid
+graph TB
+    Backlog["Backlog.tsx<br/>+ botão Dashboard"] -->|"onOpenDashboard(1)"| App["App.tsx<br/>page='dashboard'"]
+    App -->|"renderiza"| Dash["Dashboard.tsx"]
+
+    subgraph Dash["Dashboard.tsx"]
+        Cards["4 StatCards<br/>Total | Done | % | Stories"]
+        Pie["PieChart<br/>histórias por status"]
+        Bar["BarChart<br/>contagem por status"]
+        Line["LineChart<br/>burndown simplificado"]
+    end
+
+    Dash -->|"GET /api/sprints/:id/dashboard"| API[Backend]
+    API -->|"{ totalPoints, completedPoints,<br/>progress, byStatus, storiesCount }"| Dash
+
+    style Cards fill:#3b82f6,color:#fff
+    style Pie fill:#8884d8,color:#fff
+    style Bar fill:#22c55e,color:#fff
+    style Line fill:#f59e0b,color:#fff
+```
+
+**Conceitos introduzidos:**
+- **Recharts ResponsiveContainer**: gráficos que se adaptam ao tamanho do parent
+- **Cell por item**: cada fatia do Pie/barra com cor própria via `<Cell fill="..." />`
+- **Burndown simplificado**: 3 pontos (início, hoje, fim) sem histórico diário ainda
+- **StatCard reusável**: extrai cards repetitivos para evitar duplicação de classes Tailwind

@@ -6,6 +6,8 @@ import CreateProject from './pages/CreateProject'
 import ProjectDetail from './pages/ProjectDetail'
 import InvitationsPanel from './pages/InvitationsPanel'
 import Backlog from './pages/Backlog'
+import Sprints from './pages/Sprints'
+import Dashboard from './pages/Dashboard'
 
 // Tipo que define a estrutura dos dados do usuário
 interface User {
@@ -23,10 +25,14 @@ function App() {
   const [user, setUser] = useState<User | null>(null)
 
   // Controla qual página mostrar dentro do app
-  const [page, setPage] = useState<'login' | 'register' | 'projects' | 'create-project' | 'project-detail' | 'backlog'>('login')
+  // 'sprints' adicionado pela US4 para listar/criar sprints do projeto
+  const [page, setPage] = useState<'login' | 'register' | 'projects' | 'create-project' | 'project-detail' | 'backlog' | 'sprints' | 'dashboard'>('login')
 
   // ID do projeto selecionado para a tela de detalhes
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null)
+
+  // ID do sprint selecionado para o Dashboard (US7)
+  const [selectedSprintId, setSelectedSprintId] = useState<number | null>(null)
 
   // Quantidade de convites pendentes (para o badge no sino)
   const [pendingInvites, setPendingInvites] = useState(0)
@@ -122,14 +128,29 @@ function App() {
           <ProjectDetail token={token}
             projectId={selectedProjectId}
             onBack={() => setPage('projects')}
-            onOpenBacklog={() => setPage('backlog')} />
+            onOpenBacklog={() => setPage('backlog')}
+            onOpenSprints={() => setPage('sprints')} />
         )}
         {page === 'backlog' && selectedProjectId && (
           <Backlog token={token}
             projectId={selectedProjectId}
+            onBack={() => setPage('project-detail')}
+            onOpenDashboard={(sprintId) => { setSelectedSprintId(sprintId); setPage('dashboard') }} />
+        )}
+        {/* US4: tela de listar/criar sprints do projeto selecionado */}
+        {page === 'sprints' && selectedProjectId && (
+          <Sprints token={token}
+            projectId={selectedProjectId}
             onBack={() => setPage('project-detail')} />
         )}
-        {(page === 'projects' || (page !== 'create-project' && page !== 'project-detail' && page !== 'backlog')) && (
+        {/* US7: dashboard do sprint selecionado */}
+        {page === 'dashboard' && selectedProjectId && selectedSprintId && (
+          <Dashboard token={token}
+            projectId={selectedProjectId}
+            sprintId={selectedSprintId}
+            onBack={() => setPage('backlog')} />
+        )}
+        {(page === 'projects' || (page !== 'create-project' && page !== 'project-detail' && page !== 'backlog' && page !== 'sprints' && page !== 'dashboard')) && (
           <Projects token={token}
             onCreateProject={() => setPage('create-project')}
             onSelectProject={(id) => { setSelectedProjectId(id); setPage('project-detail') }} />
