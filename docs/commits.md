@@ -1078,3 +1078,47 @@ graph TB
 - **Reuso de pattern**: `isMember` e `getXAndCheckAccess` replicam a estrutura de stories.js
 - **COALESCE em UPDATE**: permite mudar só o status sem reenviar todo o sprint (ex: 'planning'→'active')
 - **DEFAULT no INSERT**: status default 'planning' aplicado pelo banco quando não enviado
+
+---
+
+## Commit 27 — Adiciona páginas Sprints e SprintForm no frontend (US4)
+
+**O que foi feito:** Criou `Sprints.tsx` (lista de cards com badge colorido por status e datas formatadas DD/MM/YYYY) e `SprintForm.tsx` (modal de criar/editar com inputs de data, validação client-side e select de status só na edição). O badge segue cores definidas pela US4: planning=amarelo, active=verde, completed=cinza.
+
+**Arquivos criados:** `frontend/src/pages/Sprints.tsx`, `frontend/src/pages/SprintForm.tsx`
+
+```mermaid
+graph TB
+    subgraph Sprints["Sprints.tsx"]
+        Header["+ Novo Sprint"]
+        SList["Lista de Cards"]
+        S1["Sprint 1 [Planejamento]<br/>Meta: ...<br/>📅 02/05 → 16/05"]
+        S2["Sprint 2 [Em andamento]<br/>Meta: ...<br/>📅 ..."]
+        SList --> S1 & S2
+    end
+
+    Header -->|"clica + Novo"| Modal
+    S1 -->|"clica Editar"| Modal["SprintForm Modal"]
+
+    subgraph Modal["SprintForm.tsx"]
+        Name["Input nome (obrigatório)"]
+        Goal["Textarea meta"]
+        SD["Input date início"]
+        ED["Input date fim"]
+        Status["Select status (só em edição)"]
+        Btn["[Salvar]"]
+    end
+
+    Btn -->|"POST /projects/:id/sprints (criar)"| API
+    Btn -->|"PUT /sprints/:id (editar)"| API["Backend"]
+    API -->|"refresh"| SList
+
+    style S1 fill:#fef9c3,stroke:#f59e0b
+    style S2 fill:#dcfce7,stroke:#22c55e
+```
+
+**Conceitos introduzidos:**
+- **Badge cores por status**: amarelo (planning), verde (active), cinza (completed) - convenção de tráfego semântico
+- **Inputs date nativos**: `<input type="date">` retorna YYYY-MM-DD compatível direto com a API
+- **Status oculto na criação**: força o sprint a nascer 'planning' (estado inicial coerente)
+- **Validação cliente**: `endDate < startDate` retorna erro antes de chamar a API
