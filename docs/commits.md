@@ -1122,3 +1122,43 @@ graph TB
 - **Inputs date nativos**: `<input type="date">` retorna YYYY-MM-DD compatível direto com a API
 - **Status oculto na criação**: força o sprint a nascer 'planning' (estado inicial coerente)
 - **Validação cliente**: `endDate < startDate` retorna erro antes de chamar a API
+
+---
+
+## Commit 28 — Adiciona rotas de Kanban: status e board (US6)
+
+**O que foi feito:** Adicionou duas rotas em `stories.js`: `PUT /api/stories/:id/status` (move uma história entre colunas validando o enum) e `GET /api/sprints/:sprintId/board` (retorna histórias agrupadas em `{ to_do, in_progress, in_review, done }`). A coluna `assignee_id` (já adicionada na migração) é exposta com username via LEFT JOIN.
+
+**Arquivos modificados:** `backend/src/routes/stories.js`
+
+```mermaid
+graph TB
+    subgraph Status["PUT /stories/:id/status"]
+        S1["Body: { status, assignee_id? }"]
+        S1 --> S2{"status ∈<br/>VALID_STATUSES?"}
+        S2 -->|"não"| S3["400 Status inválido"]
+        S2 -->|"sim"| S4{"assignee_id<br/>foi enviado?"}
+        S4 -->|"sim"| S5["UPDATE status, assignee_id"]
+        S4 -->|"não"| S6["UPDATE status"]
+        S5 & S6 --> S7["Retorna história atualizada"]
+    end
+
+    subgraph Board["GET /sprints/:id/board"]
+        B1["Pega project_id de uma story<br/>(sem depender da tabela sprints)"]
+        B1 --> B2{"isMember?"}
+        B2 -->|"sim"| B3["SELECT s.*, u.username<br/>LEFT JOIN users<br/>ORDER BY priority"]
+        B3 --> B4["Agrupa em 4 chaves:<br/>{ to_do, in_progress, in_review, done }"]
+        B4 --> B5["Status inesperado<br/>cai em to_do (defensivo)"]
+    end
+
+    style S3 fill:#d9534f,color:#fff
+    style S7 fill:#5cb85c,color:#fff
+    style B4 fill:#5cb85c,color:#fff
+    style B5 fill:#f0ad4e,color:#fff
+```
+
+**Conceitos introduzidos:**
+- **Validação enum no app**: lista `VALID_STATUSES` espelha o CHECK do banco para mensagem clara
+- **Agrupamento no backend**: frontend recebe pronto, evita 4×`.filter()` no cliente
+- **LEFT JOIN para opcional**: traz `assignee_username` mesmo quando assignee_id é NULL
+- **hasOwnProperty**: distingue "campo não enviado" de "campo enviado como null"

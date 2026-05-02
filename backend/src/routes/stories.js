@@ -173,4 +173,81 @@ router.get('/sprints/:sprintId/stories', (req, res) => {
   res.json(stories);
 });
 
+// Status válidos do Kanban (US6) - declarado uma vez e reutilizado abaixo
+// Repete o CHECK do banco para validar antes do UPDATE (mensagem de erro melhor)
+const VALID_STATUSES = ['to_do', 'in_progress', 'in_review', 'done'];
+
+// PUT /api/stories/:id/status - Move história entre colunas do Kanban (US6)
+// Body: { status, assignee_id? }
+// Endpoint dedicado (separado do PUT /stories/:id) porque mover no Kanban é uma
+// ação semanticamente distinta de editar título/descrição. Simplifica o frontend:
+// arrastar entre colunas é uma única chamada com payload mínimo.
+router.put('/stories/:id/status', (req, res) => {
+  const { story, error } = getStoryAndCheckAccess(req.params.id, req.user.id);
+  if (error) return res.status(error.status).json({ error: error.message });
+
+  const { status, assignee_id } = req.body;
+
+  // Valida o status ANTES do UPDATE para retornar 400 claro
+  // (sem essa validação, o CHECK do banco lança erro genérico de constraint)
+  if (!VALID_STATUSES.includes(status)) {
+    return res.status(400).json({
+      error: `Status inválido. Use: ${VALID_STATUSES.join(', ')}`,
+    });
+  }
+
+  // Só atualiza assignee se a chave foi enviada explicitamente
+  // (permite trocar coluna sem alterar o responsável atual)
+  const hasAssignee = Object.prototype.hasOwnProperty.call(req.body, 'assignee_id');
+  if (hasAssignee) {
+    db.prepare('UPDATE user_stories SET status = ?, assignee_id = ? WHERE id = ?')
+      .run(status, assignee_id, story.id);
+  } else {
+    db.prepare('UPDATE user_stories SET status = ? WHERE id = ?')
+      .run(status, story.id);
+  }
+
+  const updated = db.prepare('SELECT * FROM user_stories WHERE id = ?').get(story.id);
+  res.json(updated);
+});
+
+// GET /api/sprints/:sprintId/board - Histórias do sprint agrupadas por coluna do Kanban
+// Resposta: { to_do: [...], in_progress: [...], in_review: [...], done: [...] }
+// Por que agrupar no backend? Frontend recebe pronto para renderizar 4 colunas,
+// sem precisar fazer .filter() repetido 4x no cliente.
+// Inclui assignee_username via LEFT JOIN para o card mostrar quem é responsável.
+router.get('/sprints/:sprintId/board', (req, res) => {
+  const { sprintId } = req.params;
+
+  // Pega project_id de uma história qualquer do sprint para validar acesso.
+  // Como a tabela 'sprints' é construída em paralelo (US4), evitamos depender dela.
+  const sample = db.prepare(
+    'SELECT project_id FROM user_stories WHERE sprint_id = ? LIMIT 1'
+  ).get(sprintId);
+
+  if (sample && !isMember(sample.project_id, req.user.id)) {
+    return res.status(403).json({ error: 'Você não é membro deste projeto' });
+  }
+
+  // LEFT JOIN com users para trazer username do responsável (pode ser NULL)
+  // Ordena por priority para manter consistência visual com o backlog
+  const stories = db.prepare(`
+    SELECT s.*, u.username AS assignee_username
+    FROM user_stories s
+    LEFT JOIN users u ON u.id = s.assignee_id
+    WHERE s.sprint_id = ?
+    ORDER BY s.priority ASC
+  `).all(sprintId);
+
+  // Inicializa todas as colunas vazias - garante chaves consistentes mesmo sem histórias
+  const board = { to_do: [], in_progress: [], in_review: [], done: [] };
+  for (const story of stories) {
+    // Defensivo: status inesperado cai em to_do em vez de quebrar
+    const col = VALID_STATUSES.includes(story.status) ? story.status : 'to_do';
+    board[col].push(story);
+  }
+
+  res.json(board);
+});
+
 module.exports = router;
