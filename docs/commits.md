@@ -1013,6 +1013,26 @@ graph LR
 
 ---
 
+## Commit 26 — Adiciona dependência recharts para gráficos (US7)
+
+**O que foi feito:** Adicionou `recharts ^3.x` ao frontend. Biblioteca declarativa de gráficos React (Pie, Bar, Line) que será usada na tela de Dashboard pra mostrar progresso, distribuição por status e burndown.
+
+**Arquivos modificados:** `frontend/package.json`, `frontend/package-lock.json`
+
+```mermaid
+graph LR
+    Dash["Dashboard.tsx"] -->|"importa"| Pie["PieChart"]
+    Dash --> Bar["BarChart"]
+    Dash --> Line["LineChart (burndown)"]
+    Pie & Bar & Line -->|"de"| RC["recharts ^3.x"]
+    style RC fill:#8884d8,color:#fff
+```
+
+**Conceitos introduzidos:**
+- **Recharts**: API declarativa baseada em componentes React, sem precisar manipular SVG na mão
+
+---
+
 ## Commit 26 — Adiciona rotas CRUD de sprints (US4)
 
 **O que foi feito:** Criou `routes/sprints.js` com 4 rotas REST para criar, listar, atualizar e deletar sprints. Reutiliza o pattern `isMember` de stories.js. PUT usa COALESCE para atualização parcial. Apenas membros do projeto podem operar.
