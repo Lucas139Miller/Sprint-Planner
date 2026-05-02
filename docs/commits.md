@@ -632,3 +632,47 @@ erDiagram
 - **Status enum**: pending (aguardando), accepted (virou membro), rejected (recusou)
 - **Histórico preservado**: convites rejeitados/aceitos ficam no banco para auditoria
 - **2 FKs ao users**: inviter_id e invitee_id apontam para a mesma tabela
+
+---
+
+## Commit 16 — Refatora rota de convite para criar invitation pendente
+
+**O que foi feito:** A rota `POST /api/projects/:id/members` agora cria um registro em `invitations` com status `pending` em vez de adicionar direto em `project_members`. O convidado precisará aceitar o convite.
+
+**Arquivos modificados:** `backend/src/routes/projects.js`
+
+```mermaid
+graph TB
+    Owner["Dono do Projeto"] -->|"POST /api/projects/:id/members<br/>{ identifier, role }"| Route["routes/projects.js"]
+
+    Route --> Check1{"Dono do<br/>projeto?"}
+    Check1 -->|"Não"| E1["403 Apenas dono pode convidar"]
+    Check1 -->|"Sim"| Check2["Busca user por email/username"]
+
+    Check2 --> Check3{"Achou?"}
+    Check3 -->|"Não"| E2["404 Usuário não encontrado"]
+    Check3 -->|"Sim"| Check4{"É a si mesmo?"}
+
+    Check4 -->|"Sim"| E3["400 Não pode se convidar"]
+    Check4 -->|"Não"| Check5{"Já é membro?"}
+
+    Check5 -->|"Sim"| E4["409 Já é membro"]
+    Check5 -->|"Não"| Check6{"Convite<br/>pendente?"}
+
+    Check6 -->|"Sim"| E5["409 Convite já enviado"]
+    Check6 -->|"Não"| Insert["INSERT INTO invitations<br/>status = 'pending'"]
+
+    Insert --> Success["201 { id, invitee, role, status: pending }"]
+
+    style E1 fill:#d9534f,color:#fff
+    style E2 fill:#f0ad4e,color:#fff
+    style E3 fill:#f0ad4e,color:#fff
+    style E4 fill:#f0ad4e,color:#fff
+    style E5 fill:#f0ad4e,color:#fff
+    style Success fill:#5cb85c,color:#fff
+```
+
+**Conceitos introduzidos:**
+- **Validações em cascata**: cada erro tem código HTTP apropriado e mensagem específica
+- **Auto-convite bloqueado**: 400 se o dono tentar se convidar
+- **Idempotência**: não cria convite duplicado se já existe um pendente

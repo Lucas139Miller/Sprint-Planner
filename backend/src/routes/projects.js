@@ -84,21 +84,37 @@ router.post('/:id/members', (req, res) => {
     return res.status(404).json({ error: 'Usuário não encontrado' });
   }
 
-  try {
-    db.prepare(
-      'INSERT INTO project_members (project_id, user_id, role) VALUES (?, ?, ?)'
-    ).run(projectId, invitedUser.id, role);
-
-    res.status(201).json({
-      id: invitedUser.id, username: invitedUser.username,
-      email: invitedUser.email, role,
-    });
-  } catch (err) {
-    if (err.code === 'SQLITE_CONSTRAINT_UNIQUE') {
-      return res.status(409).json({ error: 'Usuário já é membro deste projeto' });
-    }
-    res.status(500).json({ error: 'Erro ao convidar membro' });
+  // Não pode convidar a si mesmo
+  if (invitedUser.id === req.user.id) {
+    return res.status(400).json({ error: 'Você não pode se convidar' });
   }
+
+  // Verifica se já é membro do projeto
+  const alreadyMember = db.prepare(
+    'SELECT 1 FROM project_members WHERE project_id = ? AND user_id = ?'
+  ).get(projectId, invitedUser.id);
+  if (alreadyMember) {
+    return res.status(409).json({ error: 'Usuário já é membro deste projeto' });
+  }
+
+  // Verifica se já existe um convite pendente para este usuário neste projeto
+  const pendingInvite = db.prepare(
+    "SELECT 1 FROM invitations WHERE project_id = ? AND invitee_id = ? AND status = 'pending'"
+  ).get(projectId, invitedUser.id);
+  if (pendingInvite) {
+    return res.status(409).json({ error: 'Convite pendente já enviado para este usuário' });
+  }
+
+  // Cria o convite com status pending
+  const invitation = db.prepare(
+    'INSERT INTO invitations (project_id, inviter_id, invitee_id, role) VALUES (?, ?, ?, ?)'
+  ).run(projectId, req.user.id, invitedUser.id, role);
+
+  res.status(201).json({
+    id: invitation.lastInsertRowid,
+    invitee: { id: invitedUser.id, username: invitedUser.username, email: invitedUser.email },
+    role, status: 'pending',
+  });
 });
 
 // GET /api/projects/:id/members - Lista membros de um projeto
