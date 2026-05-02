@@ -32,6 +32,20 @@ export default function Backlog({ token, projectId, onBack, embedded }: BacklogP
   const [showAi, setShowAi] = useState(false)
   const [editingStory, setEditingStory] = useState<Story | null>(null)
   const [viewAll, setViewAll] = useState(false)
+  // ID da história cujo dropdown "Mover para sprint" está aberto. null = nenhum.
+  const [moveMenuFor, setMoveMenuFor] = useState<number | null>(null)
+
+  // Fecha o dropdown ao clicar fora dele - listener global no document.
+  // Usa data-attribute para distinguir clicks "dentro do menu" do resto.
+  useEffect(() => {
+    if (moveMenuFor === null) return
+    const handler = (e: MouseEvent) => {
+      const target = e.target as HTMLElement
+      if (!target.closest('[data-move-menu]')) setMoveMenuFor(null)
+    }
+    document.addEventListener('click', handler)
+    return () => document.removeEventListener('click', handler)
+  }, [moveMenuFor])
 
   async function refresh() {
     setLoading(true); setError('')
@@ -55,6 +69,7 @@ export default function Backlog({ token, projectId, onBack, embedded }: BacklogP
 
   // Move uma história para um sprint específico ou de volta ao backlog (null)
   async function moveToSprint(storyId: number, sprintId: number | null) {
+    setMoveMenuFor(null)   // Fecha o dropdown imediatamente para feedback visual
     try {
       await apiFetch(`/api/stories/${storyId}/move-to-sprint`, {
         method: 'PUT', body: JSON.stringify({ sprint_id: sprintId }),
@@ -65,8 +80,9 @@ export default function Backlog({ token, projectId, onBack, embedded }: BacklogP
     }
   }
 
-  // Sprint ativo é o destino default ao mover histórias do backlog
-  const activeSprint = sprints.find(s => s.status === 'active') || sprints.find(s => s.status === 'planning')
+  // Sprints disponíveis como destino (planning + active; sem completed)
+  // Sprints concluídos não aceitam novas histórias - regra Scrum
+  const availableSprints = sprints.filter(s => s.status !== 'completed')
 
   async function handleDelete(id: number) {
     if (!confirm('Tem certeza que deseja remover esta história?')) return
@@ -152,20 +168,39 @@ export default function Backlog({ token, projectId, onBack, embedded }: BacklogP
                 <span className="bg-gray-100 px-2 py-0.5 rounded text-xs font-medium text-gray-700">
                   {story.story_points} pts
                 </span>
-                {/* Quick action: mover backlog → sprint ativo. Substitui o SprintBoard separado */}
-                {!story.sprint_id && activeSprint && (
-                  <button onClick={() => moveToSprint(story.id, activeSprint.id)}
-                    title={`Mover para ${activeSprint.name}`}
-                    className="text-xs bg-orange-50 text-orange-700 hover:bg-orange-100 px-2 py-1 rounded">
-                    → Sprint
-                  </button>
-                )}
-                {story.sprint_id && (
-                  <button onClick={() => moveToSprint(story.id, null)}
-                    title="Voltar ao backlog"
-                    className="text-xs bg-gray-50 text-gray-700 hover:bg-gray-100 px-2 py-1 rounded">
-                    ← Backlog
-                  </button>
+                {/* Dropdown de seleção de sprint - permite escolher qualquer sprint
+                    (planning ou active) como destino, em vez de auto-mover pro ativo */}
+                {availableSprints.length > 0 && (
+                  <div className="relative" data-move-menu>
+                    <button onClick={() => setMoveMenuFor(moveMenuFor === story.id ? null : story.id)}
+                      className="text-xs bg-orange-50 text-orange-700 hover:bg-orange-100 px-2 py-1 rounded inline-flex items-center gap-1">
+                      Mover ▾
+                    </button>
+                    {moveMenuFor === story.id && (
+                      <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded shadow-lg z-10 min-w-[200px] py-1">
+                        <div className="px-3 py-1 text-xs text-gray-500 font-medium border-b">Mover para sprint</div>
+                        {availableSprints
+                          .filter(s => s.id !== story.sprint_id)   // não mostra o sprint atual
+                          .map(s => (
+                            <button key={s.id} onClick={() => moveToSprint(story.id, s.id)}
+                              className="block w-full text-left px-3 py-1.5 text-xs hover:bg-blue-50">
+                              {s.status === 'active' ? '▶ ' : '○ '}{s.name}
+                              <span className="text-gray-400 ml-1">({s.status})</span>
+                            </button>
+                          ))}
+                        {/* Se a história já está em um sprint, oferece voltar ao backlog */}
+                        {story.sprint_id && (
+                          <>
+                            <div className="border-t my-1" />
+                            <button onClick={() => moveToSprint(story.id, null)}
+                              className="block w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 text-gray-700">
+                              ← Voltar ao backlog
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 )}
                 <button onClick={() => { setEditingStory(story); setShowForm(true) }}
                   className="text-blue-600 hover:underline text-xs">Editar</button>
