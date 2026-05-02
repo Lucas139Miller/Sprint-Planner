@@ -3,8 +3,12 @@
 // Aqui ficam: base URL, injeção automática do token, tratamento de 401 (logout)
 // e parse de erro consistente.
 
-// URL base da API. Em produção viria de import.meta.env.VITE_API_URL
-export const API_URL = 'http://localhost:3001'
+// URL base da API.
+// - Em produção (Vercel): VITE_API_URL = "" (vazio) → fetches usam path relativo
+//   (/api/...) e a Vercel roteia internamente pra função serverless. Same-origin,
+//   sem CORS issue, sem domínio hardcoded.
+// - Em dev local: fallback para localhost:3001 onde o backend Express roda.
+export const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3001'
 
 // Lê o token mais recente do localStorage a cada chamada (em vez de fechar sobre
 // um valor antigo). Isso garante que após login, requisições já usam o novo token.
