@@ -44,26 +44,43 @@ function App() {
   const [showInvitations, setShowInvitations] = useState(false)
 
   // Busca a contagem de convites pendentes a cada 10s
+  // Se o token for inválido (401), faz logout automático para evitar tela em branco
   useEffect(() => {
     if (!token) return
-    const fetchCount = () => {
-      fetch('http://localhost:3001/api/invitations', {
-        headers: { 'Authorization': `Bearer ${token}` },
-      })
-        .then(res => res.json())
-        .then(data => { if (Array.isArray(data)) setPendingInvites(data.length) })
+    const fetchCount = async () => {
+      try {
+        const res = await fetch('http://localhost:3001/api/invitations', {
+          headers: { 'Authorization': `Bearer ${token}` },
+        })
+        // Token inválido (DB recriado, secret mudou, etc) → limpa sessão
+        if (res.status === 401) {
+          localStorage.removeItem('token')
+          localStorage.removeItem('user')
+          setToken(null); setUser(null); setPage('login')
+          return
+        }
+        const data = await res.json()
+        if (Array.isArray(data)) setPendingInvites(data.length)
+      } catch {
+        // Backend offline - silencia o erro pra não derrubar a UI
+      }
     }
     fetchCount()
     const interval = setInterval(fetchCount, 10000)
     return () => clearInterval(interval)
   }, [token])
 
-  // useEffect roda quando o componente carrega (e quando 'token' muda)
-  // Recupera os dados do usuário salvos no localStorage
-  // Isso faz com que, ao recarregar a página, o usuário continue logado
+  // Recupera dados do usuário salvos no localStorage ao carregar
+  // try/catch evita tela em branco se localStorage tiver JSON corrompido
   useEffect(() => {
-    const saved = localStorage.getItem('user')
-    if (saved && token) setUser(JSON.parse(saved))
+    try {
+      const saved = localStorage.getItem('user')
+      if (saved && token) setUser(JSON.parse(saved))
+    } catch {
+      localStorage.removeItem('user')
+      localStorage.removeItem('token')
+      setToken(null); setUser(null)
+    }
   }, [token])
 
   // Função chamada quando o login ou registro é bem-sucedido
