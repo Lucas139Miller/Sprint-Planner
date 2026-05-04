@@ -85,6 +85,23 @@ export default function Backlog({ token, projectId, onBack, embedded, onOpenSpri
     }
   }
 
+  // Atalho: cria "Sprint 1" automaticamente e já move a história pra ele.
+  // Evita o fluxo chato de ir pra tab Sprints, criar manualmente, voltar e mover.
+  async function autoCreateSprintAndMove(storyId: number) {
+    try {
+      const sprint = await apiFetch<{ id: number }>(`/api/projects/${projectId}/sprints`, {
+        method: 'POST',
+        body: JSON.stringify({ name: 'Sprint 1', goal: 'Primeiro sprint do projeto' }),
+      })
+      await apiFetch(`/api/stories/${storyId}/move-to-sprint`, {
+        method: 'PUT', body: JSON.stringify({ sprint_id: sprint.id }),
+      })
+      refresh()
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Erro ao criar sprint')
+    }
+  }
+
   async function assignMember(storyId: number, assigneeId: number | null) {
     try {
       await apiFetch(`/api/stories/${storyId}`, {
@@ -148,7 +165,8 @@ export default function Backlog({ token, projectId, onBack, embedded, onOpenSpri
       </div>
 
       {/* Banner amarelo quando há histórias mas nenhum sprint disponível.
-          Sem isso, usuário fica perdido vendo só "Backlog" no select. */}
+          Oferece 2 ações: auto-criar Sprint 1 já configurado, ou ir pra tab
+          Sprints para customizar. */}
       {!loading && stories.length > 0 && availableSprints.length === 0 && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4 flex items-center justify-between gap-3 flex-wrap">
           <div>
@@ -156,15 +174,31 @@ export default function Backlog({ token, projectId, onBack, embedded, onOpenSpri
               💡 Você ainda não tem sprints criados
             </p>
             <p className="text-xs text-yellow-700 mt-1">
-              Para mover histórias do backlog, crie um sprint primeiro.
+              Crie o primeiro sprint e use os botões "→ Sprint 1" pra mover histórias.
             </p>
           </div>
-          {onOpenSprints && (
-            <button onClick={onOpenSprints}
+          <div className="flex gap-2">
+            <button onClick={async () => {
+              try {
+                await apiFetch(`/api/projects/${projectId}/sprints`, {
+                  method: 'POST',
+                  body: JSON.stringify({ name: 'Sprint 1', goal: 'Primeiro sprint do projeto' }),
+                })
+                refresh()
+              } catch (err) {
+                setError(err instanceof ApiError ? err.message : 'Erro ao criar sprint')
+              }
+            }}
               className="bg-yellow-600 text-white px-4 py-2 rounded text-sm hover:bg-yellow-700">
-              🏃 Criar sprint
+              ⚡ Criar Sprint 1
             </button>
-          )}
+            {onOpenSprints && (
+              <button onClick={onOpenSprints}
+                className="bg-white border border-yellow-400 text-yellow-700 px-4 py-2 rounded text-sm hover:bg-yellow-50">
+                Customizar
+              </button>
+            )}
+          </div>
         </div>
       )}
 
@@ -210,11 +244,10 @@ export default function Backlog({ token, projectId, onBack, embedded, onOpenSpri
                       leva o usuário para criar um sprint - melhor UX que select
                       vazio com só "Backlog" */}
                   {availableSprints.length === 0 ? (
-                    <button onClick={() => onOpenSprints?.()}
-                      disabled={!onOpenSprints}
-                      title="Crie um sprint primeiro"
-                      className="text-xs border border-yellow-300 bg-yellow-50 text-yellow-800 rounded px-2 py-1 hover:bg-yellow-100 disabled:opacity-60">
-                      🏃 Criar sprint para mover
+                    <button onClick={() => autoCreateSprintAndMove(story.id)}
+                      title="Cria Sprint 1 automaticamente e move esta história pra ele"
+                      className="text-xs border border-orange-300 bg-orange-50 text-orange-800 rounded px-2 py-1 hover:bg-orange-100">
+                      🏃 → Sprint 1 (criar e mover)
                     </button>
                   ) : (
                   <select value={story.sprint_id || ''}

@@ -81,8 +81,10 @@ export default function CreateProject({ token: _token, onCreated, onBack }: Crea
     }
   }
 
-  // Cria projeto + histórias selecionadas. Histórias são criadas em paralelo
-  // após criação do projeto (Promise.all).
+  // Cria projeto + histórias + Sprint 1 + move histórias pro sprint.
+  // Tudo em uma transação lógica. Se houver stories selecionadas, garante que
+  // já há um sprint inicial e elas começam atribuídas a ele (UX Scrum: PO sai
+  // do wizard com projeto + backlog + sprint pronto pra começar).
   async function finalize(skipStories: boolean = false) {
     setError(''); setLoading(true)
     try {
@@ -91,9 +93,25 @@ export default function CreateProject({ token: _token, onCreated, onBack }: Crea
       })
       if (!skipStories) {
         const toCreate = stories.filter((_, i) => selectedIdx.has(i))
-        await Promise.all(toCreate.map(s =>
-          apiFetch(`/api/projects/${project.id}/stories`, { method: 'POST', body: JSON.stringify(s) })
+        // Cria todas as stories em paralelo. Captura os IDs retornados pra
+        // mover pro sprint depois.
+        const created = await Promise.all(toCreate.map(s =>
+          apiFetch<{ id: number }>(`/api/projects/${project.id}/stories`,
+            { method: 'POST', body: JSON.stringify(s) })
         ))
+
+        // Se gerou stories, cria automaticamente "Sprint 1" e move todas pra ele
+        if (created.length > 0) {
+          const sprint = await apiFetch<{ id: number }>(`/api/projects/${project.id}/sprints`, {
+            method: 'POST',
+            body: JSON.stringify({ name: 'Sprint 1', goal: 'Primeiro sprint do projeto' }),
+          })
+          await Promise.all(created.map(s =>
+            apiFetch(`/api/stories/${s.id}/move-to-sprint`, {
+              method: 'PUT', body: JSON.stringify({ sprint_id: sprint.id }),
+            })
+          ))
+        }
       }
       onCreated()
     } catch (err) {
