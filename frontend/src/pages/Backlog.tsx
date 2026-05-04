@@ -28,9 +28,12 @@ interface BacklogProps {
   projectId: number
   onBack: () => void
   embedded?: boolean
+  // Permite o Backlog navegar pra tab Sprints quando o user precisa criar
+  // o primeiro sprint. Opcional pra não quebrar callers antigos.
+  onOpenSprints?: () => void
 }
 
-export default function Backlog({ token, projectId, onBack, embedded }: BacklogProps) {
+export default function Backlog({ token, projectId, onBack, embedded, onOpenSprints }: BacklogProps) {
   const [stories, setStories] = useState<Story[]>([])
   const [sprints, setSprints] = useState<SprintMini[]>([])
   const [members, setMembers] = useState<Member[]>([])
@@ -144,6 +147,27 @@ export default function Backlog({ token, projectId, onBack, embedded }: BacklogP
         </div>
       </div>
 
+      {/* Banner amarelo quando há histórias mas nenhum sprint disponível.
+          Sem isso, usuário fica perdido vendo só "Backlog" no select. */}
+      {!loading && stories.length > 0 && availableSprints.length === 0 && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4 flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <p className="text-sm font-medium text-yellow-900">
+              💡 Você ainda não tem sprints criados
+            </p>
+            <p className="text-xs text-yellow-700 mt-1">
+              Para mover histórias do backlog, crie um sprint primeiro.
+            </p>
+          </div>
+          {onOpenSprints && (
+            <button onClick={onOpenSprints}
+              className="bg-yellow-600 text-white px-4 py-2 rounded text-sm hover:bg-yellow-700">
+              🏃 Criar sprint
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Skeleton loaders enquanto carrega - melhor que texto "Carregando..." */}
       {loading && <SkeletonList count={4} />}
 
@@ -182,6 +206,17 @@ export default function Backlog({ token, projectId, onBack, embedded }: BacklogP
                     {story.story_points} pts
                   </span>
 
+                  {/* Quando não há sprint disponível, vira um botão visual que
+                      leva o usuário para criar um sprint - melhor UX que select
+                      vazio com só "Backlog" */}
+                  {availableSprints.length === 0 ? (
+                    <button onClick={() => onOpenSprints?.()}
+                      disabled={!onOpenSprints}
+                      title="Crie um sprint primeiro"
+                      className="text-xs border border-yellow-300 bg-yellow-50 text-yellow-800 rounded px-2 py-1 hover:bg-yellow-100 disabled:opacity-60">
+                      🏃 Criar sprint para mover
+                    </button>
+                  ) : (
                   <select value={story.sprint_id || ''}
                     onChange={e => moveToSprint(story.id, e.target.value ? Number(e.target.value) : null)}
                     className="text-xs border border-gray-300 rounded px-2 py-1 bg-white focus:outline-blue-500 cursor-pointer hover:border-blue-400"
@@ -193,6 +228,7 @@ export default function Backlog({ token, projectId, onBack, embedded }: BacklogP
                       </option>
                     ))}
                   </select>
+                  )}
 
                   {/* Avatar + select compacto pro responsável */}
                   <div className="flex items-center gap-1">

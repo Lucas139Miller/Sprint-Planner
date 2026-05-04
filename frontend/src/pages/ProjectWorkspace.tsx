@@ -54,7 +54,8 @@ export default function ProjectWorkspace({ token, projectId, onBack }: ProjectWo
   // Board/Dashboard mostram mensagem se não houver sprint ainda.
   function renderTab() {
     if (tab === 'backlog') {
-      return <Backlog token={token} projectId={projectId} onBack={() => {}} embedded />
+      return <Backlog token={token} projectId={projectId} onBack={() => {}} embedded
+        onOpenSprints={() => setTab('sprints')} />
     }
     if (tab === 'sprints') {
       return <Sprints token={token} projectId={projectId} onBack={() => {}} embedded
