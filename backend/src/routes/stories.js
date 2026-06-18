@@ -1,6 +1,13 @@
 const express = require('express');
 const supabase = require('../database');
 const authMiddleware = require('../middleware/auth');
+// Regras PURAS de histórias extraídas para o domínio (Cap. 8: testabilidade).
+const {
+  VALID_STATUSES,
+  statusValido,
+  proximaPrioridade,
+  montarUpdatesStory,
+} = require('../domain/stories');
 
 const router = express.Router();
 router.use(authMiddleware);
@@ -33,11 +40,12 @@ router.post('/projects/:projectId/stories', async (req, res) => {
     return res.status(403).json({ error: 'Você não é membro deste projeto' });
   }
 
-  // Calcula próxima priority via aggregate (max+1)
+  // Calcula próxima priority via aggregate (max+1).
+  // O +1 sobre o máximo (ou 0 se backlog vazio) é regra pura em domain/stories.js.
   const { data: maxRow } = await supabase
     .from('sp_user_stories').select('priority').eq('project_id', projectId)
     .order('priority', { ascending: false }).limit(1).maybeSingle();
-  const priority = (maxRow?.priority || 0) + 1;
+  const priority = proximaPrioridade(maxRow?.priority);
 
   const { data: story, error } = await supabase.from('sp_user_stories').insert({
     project_id: Number(projectId), title,
@@ -71,11 +79,8 @@ router.put('/stories/:id', async (req, res) => {
 
   // Monta objeto só com campos definidos (undefined some no spread).
   // assignee_id incluído aqui pra permitir atribuir membro a partir do Backlog.
-  // null é valor válido (= remover responsável).
-  const updates = {};
-  ['title', 'description', 'acceptance_criteria', 'story_points', 'label', 'assignee_id'].forEach(k => {
-    if (req.body[k] !== undefined) updates[k] = req.body[k];
-  });
+  // null é valor válido (= remover responsável). Lógica pura em domain/stories.js.
+  const updates = montarUpdatesStory(req.body);
 
   // Se está atribuindo a alguém (não null), valida que essa pessoa é membro do projeto
   // Evita atribuir tarefa para um random user_id qualquer (IDOR de assignee)
@@ -136,14 +141,13 @@ router.get('/sprints/:sprintId/stories', async (req, res) => {
   res.json(data || []);
 });
 
-const VALID_STATUSES = ['to_do', 'in_progress', 'in_review', 'done'];
-
 // PUT /api/stories/:id/status (US6 Kanban)
 router.put('/stories/:id/status', async (req, res) => {
   const { story, error: errAccess } = await getStoryAndCheckAccess(req.params.id, req.user.id);
   if (errAccess) return res.status(errAccess.status).json({ error: errAccess.message });
   const { status, assignee_id } = req.body;
-  if (!VALID_STATUSES.includes(status)) {
+  // VALID_STATUSES e statusValido vêm de domain/stories.js (fonte única do Kanban).
+  if (!statusValido(status)) {
     return res.status(400).json({ error: `Status inválido. Use: ${VALID_STATUSES.join(', ')}` });
   }
   const updates = { status };

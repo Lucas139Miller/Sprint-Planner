@@ -1,6 +1,12 @@
 const express = require('express');
 const supabase = require('../database');
 const authMiddleware = require('../middleware/auth');
+// Agregações PURAS extraídas dos handlers (Cap. 8: domínio separado da rota).
+const {
+  agregarDashboardSprint,
+  pontosConcluidosPorSprint,
+  calcularVelocity,
+} = require('../domain/dashboard');
 
 const router = express.Router();
 router.use(authMiddleware);
@@ -35,24 +41,12 @@ router.get('/sprints/:sprintId/dashboard', async (req, res) => {
     return res.status(403).json({ error: 'Você não é membro deste projeto' });
   }
 
-  // Busca todas as histórias do sprint e agrega no Node (mais simples que SQL agregado)
+  // Busca todas as histórias do sprint e agrega no Node (mais simples que SQL agregado).
+  // A agregação em si é pura e mora em domain/dashboard.js (testável isolada).
   const { data: stories } = await supabase.from('sp_user_stories')
     .select('story_points, status').eq('sprint_id', sprintId);
 
-  let totalPoints = 0, completedPoints = 0;
-  const byStatus = { to_do: 0, in_progress: 0, in_review: 0, done: 0 };
-
-  for (const s of (stories || [])) {
-    totalPoints += s.story_points || 0;
-    if (s.status === 'done') completedPoints += s.story_points || 0;
-    byStatus[s.status] = (byStatus[s.status] || 0) + 1;
-  }
-
-  const progress = totalPoints > 0 ? Math.round((completedPoints / totalPoints) * 100) : 0;
-
-  res.json({
-    totalPoints, completedPoints, progress, byStatus, storiesCount: (stories || []).length,
-  });
+  res.json(agregarDashboardSprint(stories));
 });
 
 // GET /api/projects/:projectId/velocity - Velocidade média de sprints completados
@@ -73,14 +67,9 @@ router.get('/projects/:projectId/velocity', async (req, res) => {
   const { data: doneStories } = await supabase.from('sp_user_stories')
     .select('sprint_id, story_points').eq('status', 'done').in('sprint_id', sprintIds);
 
-  const result = sprints.map(s => {
-    const completed = (doneStories || [])
-      .filter(st => st.sprint_id === s.id)
-      .reduce((acc, st) => acc + (st.story_points || 0), 0);
-    return { id: s.id, name: s.name, completed };
-  });
-
-  const velocity = Math.round(result.reduce((acc, r) => acc + r.completed, 0) / result.length);
+  // Pontos concluídos por sprint + média (velocity): funções puras em domain/dashboard.js.
+  const result = pontosConcluidosPorSprint(sprints, doneStories);
+  const velocity = calcularVelocity(result);
   res.json({ velocity, sprints: result });
 });
 

@@ -4,6 +4,13 @@
 const express = require('express');
 const supabase = require('../database');
 const authMiddleware = require('../middleware/auth');
+// Lógica de domínio PURA extraída desta rota (Cap. 8: separar domínio da apresentação).
+const {
+  calcularMetricasSprint,
+  parsearStories,
+  tentarParsearStories,
+  deveGerarHistorias,
+} = require('../domain/ai');
 
 const router = express.Router();
 router.use(authMiddleware);
@@ -72,10 +79,10 @@ Regras:
 
   try {
     const text = await callGemini(prompt);
-    // Remove cercas markdown se vierem (Gemini às vezes ignora a instrução)
-    const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-    const parsed = JSON.parse(cleaned);
-    res.json({ stories: parsed.stories || [] });
+    // Limpa cercas markdown e parseia o JSON (função pura testável em domain/ai.js).
+    // Se o JSON for inválido, parsearStories lança e caímos no catch (500) — igual antes.
+    const stories = parsearStories(text);
+    res.json({ stories });
   } catch (err) {
     res.status(500).json({ error: 'Erro ao gerar histórias com IA', details: err.message });
   }
@@ -104,11 +111,10 @@ router.post('/sprint-summary', async (req, res) => {
     return res.json({ summary: 'Este sprint não tem histórias para analisar ainda.' });
   }
 
-  // Calcula métricas agregadas localmente (mais barato que pedir pro modelo somar)
-  const totalPoints = stories.reduce((s, x) => s + (x.story_points || 0), 0);
-  const donePoints = stories.filter(s => s.status === 'done').reduce((s, x) => s + (x.story_points || 0), 0);
-  const inProgressCount = stories.filter(s => s.status === 'in_progress').length;
-  const inReviewCount = stories.filter(s => s.status === 'in_review').length;
+  // Calcula métricas agregadas localmente (mais barato que pedir pro modelo somar).
+  // Lógica pura extraída para domain/ai.js — testável sem subir o app.
+  const { totalPoints, donePoints, percentDone, inProgressCount, inReviewCount } =
+    calcularMetricasSprint(stories);
 
   const prompt = `Você é um Scrum Master analisando um sprint que está sendo encerrado.
 
@@ -116,7 +122,7 @@ Dados do sprint "${sprint.name}":
 - Meta: ${sprint.goal || 'não definida'}
 - Histórias totais: ${stories.length}
 - Pontos planejados: ${totalPoints}
-- Pontos concluídos: ${donePoints} (${totalPoints > 0 ? Math.round(donePoints / totalPoints * 100) : 0}%)
+- Pontos concluídos: ${donePoints} (${percentDone}%)
 - Em andamento: ${inProgressCount}
 - Em revisão: ${inReviewCount}
 
@@ -152,8 +158,8 @@ router.post('/project-onboarding', async (req, res) => {
 
   // Conta turnos do usuário para forçar geração de histórias após 3-4 trocas.
   // Sem isso, o modelo às vezes faz perguntas indefinidamente.
-  const userTurns = messages.filter(m => m.role === 'user').length;
-  const shouldGenerate = userTurns >= 3;
+  // Regra de corte (>= 3 turnos) extraída para domain/ai.js (função pura).
+  const shouldGenerate = deveGerarHistorias(messages);
 
   const systemInstruction = shouldGenerate
     ? `Baseado na conversa, gere 4-6 histórias de usuário para iniciar o backlog.
@@ -181,13 +187,12 @@ Tarefa atual: ${systemInstruction}`;
 
   try {
     const text = await callGemini(prompt);
-    // Tenta parsear como JSON (caso o modelo tenha gerado histórias)
+    // Tenta parsear como JSON (caso o modelo tenha gerado histórias).
+    // tentarParsearStories devolve o array quando há JSON válido com `stories`,
+    // ou null para cair no fallback de "próxima pergunta" (mesma lógica de antes).
     if (shouldGenerate) {
-      const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-      try {
-        const parsed = JSON.parse(cleaned);
-        if (parsed.stories) return res.json({ done: true, stories: parsed.stories });
-      } catch { /* fallback abaixo se parsing falhou */ }
+      const stories = tentarParsearStories(text);
+      if (stories) return res.json({ done: true, stories });
     }
     // Resposta natural (próxima pergunta)
     res.json({ done: false, message: text.trim() });
