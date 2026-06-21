@@ -1,0 +1,1881 @@
+{
+  "meta": {
+    "project": "Sprint-Planner",
+    "course": "DCC603 — Engenharia de Software · UFMG",
+    "tp": "TP2 — Testes Automatizados",
+    "generatedAt": "2026-06-18T03:51:26.874Z",
+    "isSample": false,
+    "group": "a definir",
+    "presentationDate": "a definir"
+  },
+  "summary": {
+    "coverage": {
+      "statements": 97.3,
+      "branches": 90.2,
+      "functions": 100,
+      "lines": 98.9,
+      "threshold": 80
+    },
+    "unit": {
+      "passed": 156,
+      "failed": 0,
+      "skipped": 0,
+      "total": 156,
+      "durationMs": 4899
+    },
+    "e2e": {
+      "passed": 9,
+      "failed": 0,
+      "total": 9
+    }
+  },
+  "coverageByFile": [
+    {
+      "file": "src/routes/auth.js",
+      "statements": 96.4,
+      "branches": 89.5,
+      "functions": 100,
+      "lines": 96.4
+    },
+    {
+      "file": "src/routes/projects.js",
+      "statements": 93.6,
+      "branches": 81,
+      "functions": 100,
+      "lines": 96.9
+    },
+    {
+      "file": "src/routes/sprints.js",
+      "statements": 97.8,
+      "branches": 88.9,
+      "functions": 100,
+      "lines": 100
+    },
+    {
+      "file": "src/routes/stories.js",
+      "statements": 95.4,
+      "branches": 84.3,
+      "functions": 100,
+      "lines": 100
+    },
+    {
+      "file": "src/routes/invitations.js",
+      "statements": 97.3,
+      "branches": 93.3,
+      "functions": 100,
+      "lines": 96.8
+    },
+    {
+      "file": "src/routes/dashboard.js",
+      "statements": 100,
+      "branches": 100,
+      "functions": 100,
+      "lines": 100
+    },
+    {
+      "file": "src/routes/ai.js",
+      "statements": 98.5,
+      "branches": 92.7,
+      "functions": 100,
+      "lines": 98.4
+    },
+    {
+      "file": "src/middleware/auth.js",
+      "statements": 100,
+      "branches": 90,
+      "functions": 100,
+      "lines": 100
+    },
+    {
+      "file": "src/app.js",
+      "statements": 100,
+      "branches": 100,
+      "functions": 100,
+      "lines": 100
+    },
+    {
+      "file": "src/domain/ai.js",
+      "statements": 100,
+      "branches": 100,
+      "functions": 100,
+      "lines": 100
+    },
+    {
+      "file": "src/domain/dashboard.js",
+      "statements": 100,
+      "branches": 100,
+      "functions": 100,
+      "lines": 100
+    },
+    {
+      "file": "src/domain/sprints.js",
+      "statements": 100,
+      "branches": 100,
+      "functions": 100,
+      "lines": 100
+    },
+    {
+      "file": "src/domain/stories.js",
+      "statements": 100,
+      "branches": 100,
+      "functions": 100,
+      "lines": 100
+    }
+  ],
+  "suites": [
+    {
+      "name": "calcularMetricasSprint",
+      "file": "unit/ai.unit.test.js",
+      "tests": [
+        {
+          "name": "lista vazia -> tudo zerado (valor-limite: total = 0, sem divisão por zero -> 0%)",
+          "status": "passed",
+          "durationMs": 26,
+          "code": "  test('lista vazia -> tudo zerado (valor-limite: total = 0, sem divisão por zero -> 0%)', () => {\n    // Verifica a FRONTEIRA total=0: percentDone deve ser 0 sem dividir por zero. (valor-limite)\n    // Arrange\n    const stories = [];\n    // Act\n    const r = calcularMetricasSprint(stories);\n    // Assert\n    expect(r).toEqual({\n      totalPoints: 0,\n      donePoints: 0,\n      percentDone: 0,\n      inProgressCount: 0,\n      inReviewCount: 0,\n      storiesCount: 0,\n    });\n  });",
+          "explanation": "",
+          "pinned": true,
+          "whatItTests": "Verifica que uma lista vazia de histórias zera todas as métricas e não causa divisão por zero ao calcular o percentual.",
+          "expectedResult": "Retorna todas as métricas em zero: totalPoints 0, donePoints 0, percentDone 0%, inProgressCount 0, inReviewCount 0 e storiesCount 0."
+        },
+        {
+          "name": "mistura de status -> agrega cada métrica corretamente (partição: caso típico / caminho feliz)",
+          "status": "passed",
+          "durationMs": 4,
+          "code": "  test('mistura de status -> agrega cada métrica corretamente (partição: caso típico / caminho feliz)', () => {\n    // Verifica a agregação no caso típico, com histórias em vários status. (partição de equivalência / caminho feliz)\n    // Arrange\n    const stories = [\n      { status: 'to_do', story_points: 5 },\n      { status: 'in_progress', story_points: 3 },\n      { status: 'in_review', story_points: 2 },\n      { status: 'done', story_points: 8 },\n      { status: 'done', story_points: 2 },\n    ];\n    // Act\n    const r = calcularMetricasSprint(stories);\n    // Assert\n    expect(r).toEqual({\n      totalPoints: 20, // 5+3+2+8+2\n      donePoints: 10, // 8+2 (só 'done')\n      percentDone: 50, // round(10/20*100)\n      inProgressCount: 1,\n      inReviewCount: 1,\n      storiesCount: 5,\n    });\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica a agregação correta das métricas no caso típico, com histórias em vários status diferentes.",
+          "expectedResult": "Métricas: 20 pontos totais, 10 pontos concluídos, 50% concluído, 1 em progresso, 1 em revisão e 5 histórias."
+        },
+        {
+          "name": "1 de 3 pontos done -> 33% via Math.round (valor-limite: arredondamento de fração)",
+          "status": "passed",
+          "durationMs": 5,
+          "code": "  test('1 de 3 pontos done -> 33% via Math.round (valor-limite: arredondamento de fração)', () => {\n    // Verifica o arredondamento: 1/3 = 33.33% deve virar 33 (Math.round arredonda pra baixo aqui). (valor-limite)\n    // Também cobre a fronteira \"há pontos no total mas nada 100% concluído\".\n    // Arrange\n    const stories = [\n      { status: 'done', story_points: 1 },\n      { status: 'to_do', story_points: 2 },\n    ];\n    // Act\n    const r = calcularMetricasSprint(stories);\n    // Assert\n    expect(r.percentDone).toBe(33); // round(1/3*100) = round(33.33) = 33\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica o arredondamento do percentual concluído quando 1 de 3 pontos está done (33,33%).",
+          "expectedResult": "percentDone é 33, resultado de Math.round(1/3*100)."
+        },
+        {
+          "name": "story_points null/ausente conta como 0 (partição inválida: ponto faltando)",
+          "status": "passed",
+          "durationMs": 4,
+          "code": "  test('story_points null/ausente conta como 0 (partição inválida: ponto faltando)', () => {\n    // Verifica a classe de entrada com pontos faltando: null e undefined viram 0 na soma. (partição de equivalência)\n    // Também é a fronteira superior 100% (tudo done).\n    // Arrange\n    const stories = [\n      { status: 'done', story_points: null }, // null -> 0\n      { status: 'done' }, // ausente -> 0\n      { status: 'done', story_points: 7 }, // único que soma\n    ];\n    // Act\n    const r = calcularMetricasSprint(stories);\n    // Assert\n    expect(r.totalPoints).toBe(7);\n    expect(r.donePoints).toBe(7);\n    expect(r.percentDone).toBe(100);\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica que story_points null ou ausente é tratado como 0 na soma, com todas as histórias concluídas.",
+          "expectedResult": "totalPoints 7, donePoints 7 e percentDone 100% (só a história com 7 pontos soma)."
+        },
+        {
+          "name": "undefined -> zeros sem quebrar (partição inválida / robustez: entrada não-array)",
+          "status": "passed",
+          "durationMs": 3,
+          "code": "  test('undefined -> zeros sem quebrar (partição inválida / robustez: entrada não-array)', () => {\n    // Verifica robustez: entrada não-array (undefined) é tolerada e devolve zeros. (partição de equivalência / robustez)\n    // Arrange\n    const entrada = undefined;\n    // Act\n    const r = calcularMetricasSprint(entrada);\n    // Assert\n    expect(r).toEqual({\n      totalPoints: 0,\n      donePoints: 0,\n      percentDone: 0,\n      inProgressCount: 0,\n      inReviewCount: 0,\n      storiesCount: 0,\n    });\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica a robustez quando a entrada não é um array (undefined), tolerando sem lançar erro.",
+          "expectedResult": "Retorna todas as métricas zeradas sem quebrar: totalPoints 0, donePoints 0, percentDone 0%, contagens 0."
+        },
+        {
+          "name": "texto com cercas ```json ... ``` -> remove cercas e apara (partição válida: resposta cercada)",
+          "status": "passed",
+          "durationMs": 4,
+          "code": "  test('texto com cercas ```json ... ``` -> remove cercas e apara (partição válida: resposta cercada)', () => {\n    // Verifica a classe \"Gemini embrulhou em markdown\": cercas removidas e trim aplicado. (partição de equivalência / caminho feliz)\n    // Arrange\n    const text = '```json\\n{\"stories\":[]}\\n```';\n    // Act\n    const r = limparCercasJson(text);\n    // Assert\n    expect(r).toBe('{\"stories\":[]}');\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica que cercas markdown do tipo ```json são removidas e o texto é aparado (trim).",
+          "expectedResult": "Retorna o JSON limpo '{\"stories\":[]}', sem as cercas nem espaços."
+        },
+        {
+          "name": "texto puro só leva trim (partição válida: sem cercas)",
+          "status": "passed",
+          "durationMs": 2,
+          "code": "  test('texto puro só leva trim (partição válida: sem cercas)', () => {\n    // Verifica a classe \"texto já limpo\": só os espaços nas pontas são removidos. (partição de equivalência)\n    // Arrange\n    const text = '   {\"a\":1}   ';\n    // Act\n    const r = limparCercasJson(text);\n    // Assert\n    expect(r).toBe('{\"a\":1}');\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica que um texto sem cercas markdown só tem os espaços das pontas removidos.",
+          "expectedResult": "Retorna '{\"a\":1}' com os espaços das extremidades aparados."
+        },
+        {
+          "name": "cerca ``` genérica (sem \"json\") também é removida (partição válida: cerca sem rótulo)",
+          "status": "passed",
+          "durationMs": 4,
+          "code": "  test('cerca ``` genérica (sem \"json\") também é removida (partição válida: cerca sem rótulo)', () => {\n    // Verifica que a cerca sem o rótulo \"json\" também é tratada pelo segundo replace. (partição de equivalência)\n    // Arrange\n    const text = '```\\n[1,2,3]\\n```';\n    // Act\n    const r = limparCercasJson(text);\n    // Assert\n    expect(r).toBe('[1,2,3]');\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica que cercas markdown genéricas (sem o rótulo \"json\") também são removidas.",
+          "expectedResult": "Retorna '[1,2,3]' sem as cercas."
+        },
+        {
+          "name": "null -> string vazia (valor-limite / robustez: entrada não-string)",
+          "status": "passed",
+          "durationMs": 2,
+          "code": "  test('null -> string vazia (valor-limite / robustez: entrada não-string)', () => {\n    // Verifica robustez na fronteira: entrada null não quebra e retorna ''. (valor-limite / robustez)\n    // Arrange\n    const text = null;\n    // Act\n    const r = limparCercasJson(text);\n    // Assert\n    expect(r).toBe('');\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica a robustez quando a entrada não é uma string (null), na fronteira.",
+          "expectedResult": "Retorna string vazia '' sem lançar erro."
+        },
+        {
+          "name": "JSON válido com stories (e cercas) -> devolve o array (partição válida: caminho feliz)",
+          "status": "passed",
+          "durationMs": 2,
+          "code": "  test('JSON válido com stories (e cercas) -> devolve o array (partição válida: caminho feliz)', () => {\n    // Verifica o caminho feliz: limpa cercas, faz parse e devolve o array stories. (partição de equivalência / caminho feliz)\n    // Arrange\n    const text = '```json\\n{\"stories\":[{\"title\":\"A\"},{\"title\":\"B\"}]}\\n```';\n    // Act\n    const r = parsearStories(text);\n    // Assert\n    expect(r).toEqual([{ title: 'A' }, { title: 'B' }]);\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica o caminho feliz: remove cercas, faz parse do JSON e devolve o array de stories.",
+          "expectedResult": "Retorna o array [{title:'A'},{title:'B'}]."
+        },
+        {
+          "name": "JSON válido sem a chave stories -> [] (partição válida: default da rota)",
+          "status": "passed",
+          "durationMs": 1,
+          "code": "  test('JSON válido sem a chave stories -> [] (partição válida: default da rota)', () => {\n    // Verifica o default: JSON válido sem a chave 'stories' devolve [] (parsed.stories || []). (partição de equivalência)\n    // Arrange\n    const text = '{\"outraCoisa\": true}';\n    // Act\n    const r = parsearStories(text);\n    // Assert\n    expect(r).toEqual([]);\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica o comportamento padrão quando o JSON válido não tem a chave 'stories'.",
+          "expectedResult": "Retorna um array vazio [] (fallback parsed.stories || [])."
+        },
+        {
+          "name": "JSON inválido -> propaga erro de parse (partição inválida: contrato 500 da rota)",
+          "status": "passed",
+          "durationMs": 55,
+          "code": "  test('JSON inválido -> propaga erro de parse (partição inválida: contrato 500 da rota)', () => {\n    // Verifica o contrato: JSON inválido LANÇA (a rota captura e responde 500). (partição de equivalência / robustez)\n    // Arrange\n    const text = 'isto não é json';\n    // Act + Assert (a chamada deve lançar)\n    expect(() => parsearStories(text)).toThrow();\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica que um JSON inválido faz a função lançar erro de parse (que a rota captura e responde 500).",
+          "expectedResult": "A chamada lança uma exceção de parse."
+        },
+        {
+          "name": "JSON válido com stories -> devolve o array (partição válida: gerar histórias)",
+          "status": "passed",
+          "durationMs": 2,
+          "code": "  test('JSON válido com stories -> devolve o array (partição válida: gerar histórias)', () => {\n    // Verifica a classe \"deu pra gerar\": JSON válido com 'stories' devolve o array. (partição de equivalência / caminho feliz)\n    // Arrange\n    const text = '{\"stories\":[{\"title\":\"X\"}]}';\n    // Act\n    const r = tentarParsearStories(text);\n    // Assert\n    expect(r).toEqual([{ title: 'X' }]);\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica que um JSON válido contendo 'stories' devolve o array de histórias.",
+          "expectedResult": "Retorna o array [{title:'X'}]."
+        },
+        {
+          "name": "JSON válido sem stories -> null (partição válida: sinaliza fallback de pergunta)",
+          "status": "passed",
+          "durationMs": 2,
+          "code": "  test('JSON válido sem stories -> null (partição válida: sinaliza fallback de pergunta)', () => {\n    // Verifica que JSON válido SEM 'stories' devolve null, sinalizando \"próxima pergunta\". (partição de equivalência)\n    // Arrange\n    const text = '{\"reply\":\"qual o objetivo do projeto?\"}';\n    // Act\n    const r = tentarParsearStories(text);\n    // Assert\n    expect(r).toBeNull();\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica que um JSON válido sem a chave 'stories' devolve null, sinalizando o fallback de próxima pergunta.",
+          "expectedResult": "Retorna null."
+        },
+        {
+          "name": "texto natural (JSON inválido) -> null sem lançar (partição inválida: tolerante)",
+          "status": "passed",
+          "durationMs": 1,
+          "code": "  test('texto natural (JSON inválido) -> null sem lançar (partição inválida: tolerante)', () => {\n    // Verifica a tolerância: JSON inválido NÃO lança, devolve null (cai no fallback). (partição de equivalência / robustez)\n    // Arrange\n    const text = 'Olá! Pode me contar mais sobre o projeto?';\n    // Act\n    const r = tentarParsearStories(text);\n    // Assert\n    expect(r).toBeNull();\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica a tolerância a texto natural (JSON inválido), que não deve lançar erro.",
+          "expectedResult": "Retorna null sem lançar exceção (cai no fallback)."
+        },
+        {
+          "name": "2 turnos do usuário -> false (valor-limite: logo ABAIXO do corte >= 3)",
+          "status": "passed",
+          "durationMs": 1,
+          "code": "  test('2 turnos do usuário -> false (valor-limite: logo ABAIXO do corte >= 3)', () => {\n    // Verifica a fronteira inferior do corte: 2 turnos ainda NÃO gera (< 3). (valor-limite)\n    // Arrange\n    const messages = [\n      { role: 'user', content: 'oi' },\n      { role: 'assistant', content: 'pergunta' },\n      { role: 'user', content: 'resposta' },\n    ];\n    // Act\n    const r = deveGerarHistorias(messages);\n    // Assert\n    expect(r).toBe(false);\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica a fronteira inferior do corte de geração: com 2 turnos do usuário ainda não deve gerar histórias.",
+          "expectedResult": "Retorna false (2 turnos está logo abaixo do corte de 3)."
+        },
+        {
+          "name": "3 turnos do usuário -> true (valor-limite: EXATAMENTE no corte >= 3)",
+          "status": "passed",
+          "durationMs": 2,
+          "code": "  test('3 turnos do usuário -> true (valor-limite: EXATAMENTE no corte >= 3)', () => {\n    // Verifica a fronteira exata: 3 turnos do usuário já dispara a geração (>= 3). (valor-limite)\n    // Arrange\n    const messages = [\n      { role: 'user', content: 'a' },\n      { role: 'assistant', content: '?' },\n      { role: 'user', content: 'b' },\n      { role: 'assistant', content: '?' },\n      { role: 'user', content: 'c' },\n    ];\n    // Act\n    const r = deveGerarHistorias(messages);\n    // Assert\n    expect(r).toBe(true);\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica a fronteira exata do corte: com 3 turnos do usuário a geração de histórias já é disparada.",
+          "expectedResult": "Retorna true (3 turnos está exatamente no corte >= 3)."
+        },
+        {
+          "name": "só conta role \"user\"; assistant é ignorado (partição válida: filtro por papel)",
+          "status": "passed",
+          "durationMs": 1,
+          "code": "  test('só conta role \"user\"; assistant é ignorado (partição válida: filtro por papel)', () => {\n    // Verifica que mensagens do assistant não contam — só 'user' entra na contagem. (partição de equivalência)\n    // Arrange: 5 mensagens, mas só 2 são do usuário -> abaixo do corte\n    const messages = [\n      { role: 'assistant', content: 'a' },\n      { role: 'assistant', content: 'b' },\n      { role: 'user', content: 'c' },\n      { role: 'assistant', content: 'd' },\n      { role: 'user', content: 'e' },\n    ];\n    // Act\n    const r = deveGerarHistorias(messages);\n    // Assert\n    expect(r).toBe(false);\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica que só mensagens com role 'user' contam na contagem de turnos; as do assistant são ignoradas.",
+          "expectedResult": "Retorna false (são 5 mensagens, mas só 2 do usuário, abaixo do corte)."
+        },
+        {
+          "name": "undefined -> false sem quebrar (partição inválida / robustez: entrada não-array)",
+          "status": "passed",
+          "durationMs": 1,
+          "code": "  test('undefined -> false sem quebrar (partição inválida / robustez: entrada não-array)', () => {\n    // Verifica robustez: entrada não-array (undefined) é tolerada e devolve false. (partição de equivalência / robustez)\n    // Arrange\n    const messages = undefined;\n    // Act\n    const r = deveGerarHistorias(messages);\n    // Assert\n    expect(r).toBe(false);\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica a robustez quando a entrada não é um array (undefined), sem lançar erro.",
+          "expectedResult": "Retorna false sem quebrar."
+        }
+      ]
+    },
+    {
+      "name": "UNIDADE: authMiddleware(req, res, next) chamado direto",
+      "file": "unit/middleware.unit.test.js",
+      "tests": [
+        {
+          "name": "sem header Authorization -> 401 \"Token não fornecido\" e não chama next",
+          "status": "passed",
+          "durationMs": 32,
+          "code": "  it('sem header Authorization -> 401 \"Token não fornecido\" e não chama next', async () => {\n    // Arrange — req sem headers de autenticação; res/next dublês.\n    const req = criarReq({}); // sem authorization\n    const res = criarRes();\n    const next = jest.fn();\n\n    // Act — chama o middleware diretamente.\n    await authMiddleware(req, res, next);\n\n    // Assert — barrou com 401, mensagem correta e não seguiu o fluxo.\n    expect(res.status).toHaveBeenCalledWith(401);\n    expect(res.json).toHaveBeenCalledWith({ error: 'Token não fornecido' });\n    expect(next).not.toHaveBeenCalled();\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica que, sem o header Authorization, o middleware barra a requisição e não segue o fluxo.",
+          "expectedResult": "Responde 401 com { error: \"Token não fornecido\" } e next() não é chamado."
+        },
+        {
+          "name": "token inválido -> 401 \"Token inválido ou expirado\" e não chama next",
+          "status": "passed",
+          "durationMs": 4,
+          "code": "  it('token inválido -> 401 \"Token inválido ou expirado\" e não chama next', async () => {\n    // Arrange — header com um \"token\" que não é um JWT assinado válido.\n    const req = criarReq({ authorization: 'Bearer isto-nao-e-um-jwt' });\n    const res = criarRes();\n    const next = jest.fn();\n\n    // Act\n    await authMiddleware(req, res, next);\n\n    // Assert — 401 do branch de catch, sem deixar passar.\n    expect(res.status).toHaveBeenCalledWith(401);\n    expect(res.json).toHaveBeenCalledWith({ error: 'Token inválido ou expirado' });\n    expect(next).not.toHaveBeenCalled();\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica que um token que não é um JWT válido é rejeitado pelo jwt.verify.",
+          "expectedResult": "Responde 401 com { error: \"Token inválido ou expirado\" } e next() não é chamado."
+        },
+        {
+          "name": "token válido mas usuário inexistente no banco -> 401 \"Usuário não encontrado...\"",
+          "status": "passed",
+          "durationMs": 17,
+          "code": "  it('token válido mas usuário inexistente no banco -> 401 \"Usuário não encontrado...\"', async () => {\n    // Arrange — token válido de um id fantasma que nunca foi semeado no fake.\n    const idFantasma = 97001;\n    const token = jwt.sign({ id: idFantasma, username: 'fantasma' }, JWT_SECRET);\n    const req = criarReq({ authorization: `Bearer ${token}` });\n    const res = criarRes();\n    const next = jest.fn();\n\n    // Act\n    await authMiddleware(req, res, next);\n\n    // Assert — passou pelo jwt.verify, mas o banco (mock) não tem o user -> 401.\n    expect(res.status).toHaveBeenCalledWith(401);\n    expect(res.json).toHaveBeenCalledWith({\n      error: 'Usuário não encontrado. Faça login novamente.',\n    });\n    expect(next).not.toHaveBeenCalled();\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica que um token bem assinado, mas de um usuário que não existe no banco, é barrado.",
+          "expectedResult": "Responde 401 com { error: \"Usuário não encontrado. Faça login novamente.\" } e next() não é chamado."
+        },
+        {
+          "name": "token válido + usuário existe -> chama next() e seta req.user",
+          "status": "passed",
+          "durationMs": 28,
+          "code": "  it('token válido + usuário existe -> chama next() e seta req.user', async () => {\n    // Arrange — semeia o usuário no banco dublado e assina um token para ele.\n    // O fake gera o id (auto-incremento); pegamos o id REAL devolvido para\n    // assinar o token, garantindo que jwt.verify case com a consulta a sp_users.\n    const [usuario] = fakeSupabase.__seed('sp_users', {\n      username: 'maria', email: 'maria@exemplo.com', password: 'hash-fake',\n    });\n    const token = jwt.sign({ id: usuario.id, username: usuario.username }, JWT_SECRET);\n    const req = criarReq({ authorization: `Bearer ${token}` });\n    const res = criarRes();\n    const next = jest.fn();\n\n    // Act\n    await authMiddleware(req, res, next);\n\n    // Assert — deixou passar (next 1x), sem responder erro, com req.user setado.\n    expect(next).toHaveBeenCalledTimes(1);\n    expect(res.status).not.toHaveBeenCalled();\n    expect(res.json).not.toHaveBeenCalled();\n    expect(req.user).toMatchObject({ id: usuario.id, username: 'maria' });\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica o caminho feliz: token válido de um usuário existente libera a requisição e anexa req.user.",
+          "expectedResult": "Chama next() uma vez, não responde erro e req.user fica com { id, username } do token."
+        }
+      ]
+    },
+    {
+      "name": "statusValido — valida status do Kanban (US6)",
+      "file": "unit/stories.unit.test.js",
+      "tests": [
+        {
+          "name": "classe válida: status conhecido \"to_do\" -> true",
+          "status": "passed",
+          "durationMs": 9,
+          "code": "  test.each(VALID_STATUSES)",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica que o status conhecido \"to_do\" do Kanban é aceito como válido.",
+          "expectedResult": "Retorna true."
+        },
+        {
+          "name": "classe válida: status conhecido \"in_progress\" -> true",
+          "status": "passed",
+          "durationMs": 7,
+          "code": "  test.each(VALID_STATUSES)",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica que o status conhecido \"in_progress\" do Kanban é aceito como válido.",
+          "expectedResult": "Retorna true."
+        },
+        {
+          "name": "classe válida: status conhecido \"in_review\" -> true",
+          "status": "passed",
+          "durationMs": 3,
+          "code": "  test.each(VALID_STATUSES)",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica que o status conhecido \"in_review\" do Kanban é aceito como válido.",
+          "expectedResult": "Retorna true."
+        },
+        {
+          "name": "classe válida: status conhecido \"done\" -> true",
+          "status": "passed",
+          "durationMs": 2,
+          "code": "  test.each(VALID_STATUSES)",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica que o status conhecido \"done\" do Kanban é aceito como válido.",
+          "expectedResult": "Retorna true."
+        },
+        {
+          "name": "valor-limite: \"DONE\" maiúsculo -> false (comparação é case-sensitive)",
+          "status": "passed",
+          "durationMs": 1,
+          "code": "  test('valor-limite: \"DONE\" maiúsculo -> false (comparação é case-sensitive)', () => {\n    // Arrange\n    const maiusculo = 'DONE';\n    // Act\n    const resultado = statusValido(maiusculo);\n    // Assert\n    expect(resultado).toBe(false);\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica que a validação de status é case-sensitive, rejeitando \"DONE\" em maiúsculo.",
+          "expectedResult": "Retorna false."
+        },
+        {
+          "name": "classe inválida/robustez: \"archived\" (string fora da lista de status) -> false",
+          "status": "passed",
+          "durationMs": 4,
+          "code": "  test.each([\n    ['archived', 'string fora da lista de status'],\n    [undefined, 'undefined (campo não enviado / tipo errado)'],\n  ])",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica que uma string fora da lista de status do Kanban (\"archived\") é rejeitada.",
+          "expectedResult": "Retorna false."
+        },
+        {
+          "name": "classe inválida/robustez: undefined (undefined (campo não enviado / tipo errado)) -> false",
+          "status": "passed",
+          "durationMs": 1,
+          "code": "  test.each([\n    ['archived', 'string fora da lista de status'],\n    [undefined, 'undefined (campo não enviado / tipo errado)'],\n  ])",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica a robustez quando o status é undefined (campo não enviado ou tipo errado).",
+          "expectedResult": "Retorna false sem quebrar."
+        },
+        {
+          "name": "valor-limite: backlog vazio (null) -> 1 (primeira história)",
+          "status": "passed",
+          "durationMs": 1,
+          "code": "  test('valor-limite: backlog vazio (null) -> 1 (primeira história)', () => {\n    // Arrange\n    const maxAtual = null;\n    // Act\n    const proxima = proximaPrioridade(maxAtual);\n    // Assert\n    expect(proxima).toBe(1);\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica que, com o backlog vazio (maxAtual null), a próxima prioridade é 1.",
+          "expectedResult": "Retorna 1 (primeira história)."
+        },
+        {
+          "name": "valor-limite: maxAtual 0 -> 1 (|| trata 0 como ausência)",
+          "status": "passed",
+          "durationMs": 1,
+          "code": "  test('valor-limite: maxAtual 0 -> 1 (|| trata 0 como ausência)', () => {\n    // Arrange\n    const maxAtual = 0;\n    // Act\n    const proxima = proximaPrioridade(maxAtual);\n    // Assert\n    expect(proxima).toBe(1);\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica a fronteira do operador ||: maxAtual 0 (falsy) é tratado como ausência.",
+          "expectedResult": "Retorna 1."
+        },
+        {
+          "name": "classe típica (caminho feliz): maxAtual 5 -> 6",
+          "status": "passed",
+          "durationMs": 1,
+          "code": "  test('classe típica (caminho feliz): maxAtual 5 -> 6', () => {\n    // Arrange\n    const maxAtual = 5;\n    // Act\n    const proxima = proximaPrioridade(maxAtual);\n    // Assert\n    expect(proxima).toBe(6);\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica o caso típico: havendo histórias, a próxima prioridade é o maior valor + 1.",
+          "expectedResult": "Retorna 6 (5 + 1)."
+        },
+        {
+          "name": "classe enviado vs. ausente: campos definidos entram, undefined some",
+          "status": "passed",
+          "durationMs": 4,
+          "code": "  test('classe enviado vs. ausente: campos definidos entram, undefined some', () => {\n    // Arrange: title/story_points enviados; label explicitamente undefined.\n    const body = { title: 'Novo título', story_points: 5, label: undefined };\n    // Act\n    const updates = montarUpdatesStory(body);\n    // Assert: só os definidos entraram; 'label' não foi incluído.\n    expect(updates).toEqual({ title: 'Novo título', story_points: 5 });\n    expect('label' in updates).toBe(false);\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica que o update parcial inclui só os campos enviados e descarta os undefined.",
+          "expectedResult": "Retorna { title, story_points } e a chave 'label' não entra no update."
+        },
+        {
+          "name": "valor-limite: assignee_id null é PRESERVADO (remover responsável)",
+          "status": "passed",
+          "durationMs": 2,
+          "code": "  test('valor-limite: assignee_id null é PRESERVADO (remover responsável)', () => {\n    // Arrange\n    const body = { assignee_id: null };\n    // Act\n    const updates = montarUpdatesStory(body);\n    // Assert: a chave existe e o valor é null (não foi tratado como ausência).\n    expect(updates).toEqual({ assignee_id: null });\n    expect('assignee_id' in updates).toBe(true);\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica a fronteira null vs. undefined: assignee_id null é um valor válido (remover responsável) e deve ser preservado.",
+          "expectedResult": "Retorna { assignee_id: null } com a chave presente."
+        },
+        {
+          "name": "classe fora da whitelist: priority/project_id/id/hacker são ignorados",
+          "status": "passed",
+          "durationMs": 1,
+          "code": "  test('classe fora da whitelist: priority/project_id/id/hacker são ignorados', () => {\n    // Arrange: só 'title' é atualizável; o resto deve ser descartado.\n    const body = { title: 'X', priority: 99, project_id: 7, id: 1, hacker: true };\n    // Act\n    const updates = montarUpdatesStory(body);\n    // Assert\n    expect(updates).toEqual({ title: 'X' });\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica que campos fora da lista branca (priority/project_id/id e até um campo malicioso) são ignorados.",
+          "expectedResult": "Retorna só { title: 'X' }, descartando o resto."
+        },
+        {
+          "name": "robustez/valor-limite: body undefined -> {} (não lança)",
+          "status": "passed",
+          "durationMs": 1,
+          "code": "  test('robustez/valor-limite: body undefined -> {} (não lança)', () => {\n    // Arrange\n    const body = undefined;\n    // Act\n    const updates = montarUpdatesStory(body);\n    // Assert\n    expect(updates).toEqual({});\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica a robustez quando o body é undefined, com a guarda (body || {}).",
+          "expectedResult": "Retorna {} sem lançar erro."
+        },
+        {
+          "name": "caminho feliz: os 6 campos atualizáveis enviados juntos entram todos",
+          "status": "passed",
+          "durationMs": 2,
+          "code": "  test('caminho feliz: os 6 campos atualizáveis enviados juntos entram todos', () => {\n    // Arrange\n    const body = {\n      title: 'Título',\n      description: 'Descrição',\n      acceptance_criteria: 'Critérios',\n      story_points: 3,\n      label: 'bug',\n      assignee_id: 42,\n    };\n    // Act\n    const updates = montarUpdatesStory(body);\n    // Assert: o update é igual ao body (todos os campos são atualizáveis).\n    expect(updates).toEqual(body);\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica que os 6 campos atualizáveis enviados juntos aparecem integralmente no update.",
+          "expectedResult": "Retorna o objeto igual ao body (todos os 6 campos da whitelist)."
+        },
+        {
+          "name": "valor-limite: story_points 0 (falsy mas != undefined) é preservado",
+          "status": "passed",
+          "durationMs": 1,
+          "code": "  test('valor-limite: story_points 0 (falsy mas != undefined) é preservado', () => {\n    // Arrange\n    const body = { story_points: 0 };\n    // Act\n    const updates = montarUpdatesStory(body);\n    // Assert\n    expect(updates).toEqual({ story_points: 0 });\n    expect('story_points' in updates).toBe(true);\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica a fronteira numérica: story_points 0 é falsy mas não é undefined, então deve ser preservado.",
+          "expectedResult": "Retorna { story_points: 0 } com a chave presente."
+        }
+      ]
+    },
+    {
+      "name": "domain/dashboard - agregarDashboardSprint",
+      "file": "unit/dashboard.unit.test.js",
+      "tests": [
+        {
+          "name": "mistura de status -> soma pontos, conta por coluna e calcula progresso",
+          "status": "passed",
+          "durationMs": 14,
+          "code": "  test('mistura de status -> soma pontos, conta por coluna e calcula progresso', () => {\n    // TÉCNICA: partição de equivalência (classe TÍPICA — sprint real com\n    // histórias em várias colunas e pontos variados). Verifica o caminho feliz.\n    // Arrange: 5 histórias, 8 de 20 pontos concluídos (status 'done').\n    const stories = [\n      { status: 'done', story_points: 5 },\n      { status: 'done', story_points: 3 },\n      { status: 'in_progress', story_points: 2 },\n      { status: 'in_review', story_points: 0 },\n      { status: 'to_do', story_points: 10 },\n    ];\n    // Act\n    const r = agregarDashboardSprint(stories);\n    // Assert\n    expect(r.totalPoints).toBe(20);\n    expect(r.completedPoints).toBe(8);\n    expect(r.progress).toBe(40); // 8/20 = 40%\n    expect(r.byStatus).toEqual({ to_do: 1, in_progress: 1, in_review: 1, done: 2 });\n    expect(r.storiesCount).toBe(5);\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica o caminho feliz da agregação do dashboard: soma de pontos, contagem por coluna e progresso.",
+          "expectedResult": "totalPoints 20, completedPoints 8, progress 40%, byStatus {to_do:1,in_progress:1,in_review:1,done:2} e storiesCount 5."
+        },
+        {
+          "name": "sprint vazio -> estrutura totalmente zerada",
+          "status": "passed",
+          "durationMs": 4,
+          "code": "  test('sprint vazio -> estrutura totalmente zerada', () => {\n    // TÉCNICA: valor-limite (fronteira INFERIOR — nenhuma história). A UI\n    // depende dessa estrutura zerada para não quebrar.\n    // Arrange\n    const stories = [];\n    // Act\n    const r = agregarDashboardSprint(stories);\n    // Assert: todos os campos zerados e byStatus com as 4 colunas em 0.\n    expect(r).toEqual({\n      totalPoints: 0,\n      completedPoints: 0,\n      progress: 0,\n      byStatus: { to_do: 0, in_progress: 0, in_review: 0, done: 0 },\n      storiesCount: 0,\n    });\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica que um sprint sem histórias devolve a estrutura totalmente zerada para a UI não quebrar.",
+          "expectedResult": "totalPoints 0, completedPoints 0, progress 0, byStatus com as 4 colunas em 0 e storiesCount 0."
+        },
+        {
+          "name": "todas as histórias done -> progresso 100%",
+          "status": "passed",
+          "durationMs": 6,
+          "code": "  test('todas as histórias done -> progresso 100%', () => {\n    // TÉCNICA: valor-limite (fronteira SUPERIOR do progresso — 100%).\n    // Arrange\n    const stories = [\n      { status: 'done', story_points: 2 },\n      { status: 'done', story_points: 6 },\n    ];\n    // Act\n    const r = agregarDashboardSprint(stories);\n    // Assert\n    expect(r.completedPoints).toBe(8);\n    expect(r.progress).toBe(100);\n    expect(r.byStatus.done).toBe(2);\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica a fronteira superior do progresso quando todas as histórias estão concluídas.",
+          "expectedResult": "completedPoints 8, progress 100% e byStatus.done 2."
+        },
+        {
+          "name": "story_points ausente/null contam 0 e não há divisão por zero",
+          "status": "passed",
+          "durationMs": 5,
+          "code": "  test('story_points ausente/null contam 0 e não há divisão por zero', () => {\n    // TÉCNICA: partição de equivalência (classe DADO INCOMPLETO — histórias\n    // sem pontos) combinada com valor-limite (totalPoints = 0 com histórias\n    // presentes -> progress deve ser 0, sem 0/0 = NaN).\n    // Arrange: uma sem o campo, outra com null explícito.\n    const stories = [\n      { status: 'to_do' },\n      { status: 'done', story_points: null },\n    ];\n    // Act\n    const r = agregarDashboardSprint(stories);\n    // Assert\n    expect(r.totalPoints).toBe(0);\n    expect(r.completedPoints).toBe(0);\n    expect(r.progress).toBe(0); // protegido contra divisão por zero\n    expect(r.storiesCount).toBe(2);\n    expect(r.byStatus.done).toBe(1); // a coluna ainda é contada\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica que pontos ausentes/null contam 0 e que, com total de pontos 0 mas histórias presentes, não há divisão por zero.",
+          "expectedResult": "totalPoints 0, completedPoints 0, progress 0 (protegido), storiesCount 2 e byStatus.done 1."
+        },
+        {
+          "name": "progresso é arredondado com Math.round (1 de 3 done = 33%)",
+          "status": "passed",
+          "durationMs": 1,
+          "code": "  test('progresso é arredondado com Math.round (1 de 3 done = 33%)', () => {\n    // TÉCNICA: valor-limite no ARREDONDAMENTO (1/3 = 33,33... -> 33).\n    // Arrange: 1 done (1pt) de 3 pontos totais.\n    const stories = [\n      { status: 'done', story_points: 1 },\n      { status: 'to_do', story_points: 1 },\n      { status: 'to_do', story_points: 1 },\n    ];\n    // Act\n    const r = agregarDashboardSprint(stories);\n    // Assert\n    expect(r.progress).toBe(33); // Math.round(33.33) = 33\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica o arredondamento do progresso quando 1 de 3 pontos está done (33,33%).",
+          "expectedResult": "progress é 33 (Math.round(33.33))."
+        },
+        {
+          "name": "entrada não-array (null) -> zeros (robustez)",
+          "status": "passed",
+          "durationMs": 3,
+          "code": "  test('entrada não-array (null) -> zeros (robustez)', () => {\n    // TÉCNICA: robustez (entrada fora do contrato não pode quebrar a função).\n    // Arrange + Act\n    const r = agregarDashboardSprint(null);\n    // Assert\n    expect(r.totalPoints).toBe(0);\n    expect(r.completedPoints).toBe(0);\n    expect(r.progress).toBe(0);\n    expect(r.storiesCount).toBe(0);\n    expect(r.byStatus).toEqual({ to_do: 0, in_progress: 0, in_review: 0, done: 0 });\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica a robustez quando a entrada não é um array (null).",
+          "expectedResult": "Retorna a estrutura zerada (pontos 0, progress 0, contagens 0) sem quebrar."
+        },
+        {
+          "name": "associa histórias done ao sprint certo por sprint_id e soma os pontos",
+          "status": "passed",
+          "durationMs": 3,
+          "code": "  test('associa histórias done ao sprint certo por sprint_id e soma os pontos', () => {\n    // TÉCNICA: partição de equivalência (classe TÍPICA — várias histórias\n    // distribuídas entre sprints distintos). Caminho feliz da associação.\n    // Arrange\n    const sprints = [\n      { id: 1, name: 'Sprint A' },\n      { id: 2, name: 'Sprint B' },\n    ];\n    const doneStories = [\n      { sprint_id: 1, story_points: 3 },\n      { sprint_id: 1, story_points: 5 },\n      { sprint_id: 2, story_points: 2 },\n    ];\n    // Act\n    const r = pontosConcluidosPorSprint(sprints, doneStories);\n    // Assert: 3+5 no A, 2 no B.\n    expect(r).toEqual([\n      { id: 1, name: 'Sprint A', completed: 8 },\n      { id: 2, name: 'Sprint B', completed: 2 },\n    ]);\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica o caminho feliz: associa as histórias concluídas ao sprint certo por sprint_id e soma os pontos.",
+          "expectedResult": "Retorna [{Sprint A, completed:8},{Sprint B, completed:2}]."
+        },
+        {
+          "name": "story_points null conta como 0 na soma",
+          "status": "passed",
+          "durationMs": 1,
+          "code": "  test('story_points null conta como 0 na soma', () => {\n    // TÉCNICA: partição de equivalência (classe DADO INCOMPLETO — ponto null).\n    // Arrange\n    const sprints = [{ id: 1, name: 'S' }];\n    const doneStories = [\n      { sprint_id: 1, story_points: null },\n      { sprint_id: 1, story_points: 4 },\n    ];\n    // Act\n    const r = pontosConcluidosPorSprint(sprints, doneStories);\n    // Assert\n    expect(r[0].completed).toBe(4); // 0 + 4\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica que story_points null conta como 0 na soma de pontos concluídos do sprint.",
+          "expectedResult": "O sprint resulta em completed 4 (0 + 4)."
+        },
+        {
+          "name": "ambos argumentos não-array -> [] (robustez)",
+          "status": "passed",
+          "durationMs": 1,
+          "code": "  test('ambos argumentos não-array -> [] (robustez)', () => {\n    // TÉCNICA: robustez (entradas fora do contrato nos dois parâmetros).\n    // Arrange + Act\n    const r = pontosConcluidosPorSprint(null, undefined);\n    // Assert\n    expect(r).toEqual([]);\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica a robustez quando ambos os argumentos não são arrays (null e undefined).",
+          "expectedResult": "Retorna [] sem quebrar."
+        },
+        {
+          "name": "média arredondada dos pontos concluídos por sprint",
+          "status": "passed",
+          "durationMs": 2,
+          "code": "  test('média arredondada dos pontos concluídos por sprint', () => {\n    // TÉCNICA: partição de equivalência (classe TÍPICA — média inteira exata).\n    // Arrange: (8 + 2 + 5) / 3 = 5.\n    const resultados = [{ completed: 8 }, { completed: 2 }, { completed: 5 }];\n    // Act\n    const v = calcularVelocity(resultados);\n    // Assert\n    expect(v).toBe(5);\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica o cálculo da velocity como média dos pontos concluídos por sprint.",
+          "expectedResult": "Retorna 5 ((8+2+5)/3)."
+        },
+        {
+          "name": "arredonda com Math.round no .5 — (3 + 4)/2 = 3.5 -> 4",
+          "status": "passed",
+          "durationMs": 1,
+          "code": "  test('arredonda com Math.round no .5 — (3 + 4)/2 = 3.5 -> 4', () => {\n    // TÉCNICA: valor-limite no ARREDONDAMENTO (fronteira exata do .5).\n    // Arrange + Act + Assert\n    expect(calcularVelocity([{ completed: 3 }, { completed: 4 }])).toBe(4);\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica o arredondamento da velocity na fronteira exata do .5.",
+          "expectedResult": "Retorna 4 (Math.round(3.5))."
+        },
+        {
+          "name": "um único sprint -> retorna o próprio valor",
+          "status": "passed",
+          "durationMs": 1,
+          "code": "  test('um único sprint -> retorna o próprio valor', () => {\n    // TÉCNICA: valor-limite (fronteira INFERIOR de tamanho útil — 1 elemento).\n    // Arrange + Act + Assert\n    expect(calcularVelocity([{ completed: 7 }])).toBe(7);\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica a fronteira de tamanho mínimo: com um único sprint a velocity é o próprio valor.",
+          "expectedResult": "Retorna 7."
+        },
+        {
+          "name": "lista vazia -> 0 (sem divisão por zero)",
+          "status": "passed",
+          "durationMs": 1,
+          "code": "  test('lista vazia -> 0 (sem divisão por zero)', () => {\n    // TÉCNICA: valor-limite (fronteira — nenhum sprint; protege contra n/0).\n    // Arrange + Act + Assert\n    expect(calcularVelocity([])).toBe(0);\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica a fronteira sem sprints, protegendo contra divisão por zero.",
+          "expectedResult": "Retorna 0."
+        },
+        {
+          "name": "entrada undefined -> 0 (robustez)",
+          "status": "passed",
+          "durationMs": 2,
+          "code": "  test('entrada undefined -> 0 (robustez)', () => {\n    // TÉCNICA: robustez (argumento ausente não deve quebrar nem virar NaN).\n    // Arrange + Act + Assert\n    expect(calcularVelocity(undefined)).toBe(0);\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica a robustez quando o argumento da velocity é undefined.",
+          "expectedResult": "Retorna 0 (não vira NaN)."
+        },
+        {
+          "name": "completed null/ausente conta 0 na média",
+          "status": "passed",
+          "durationMs": 1,
+          "code": "  test('completed null/ausente conta 0 na média', () => {\n    // TÉCNICA: partição de equivalência (classe DADO INCOMPLETO — completed\n    // null). (0 + 6) / 2 = 3.\n    // Arrange + Act + Assert\n    expect(calcularVelocity([{ completed: null }, { completed: 6 }])).toBe(3);\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica que completed null/ausente conta como 0 no cálculo da média da velocity.",
+          "expectedResult": "Retorna 3 ((0+6)/2)."
+        }
+      ]
+    },
+    {
+      "name": "montarInsertSprint(projectId, body)",
+      "file": "unit/sprints.unit.test.js",
+      "tests": [
+        {
+          "name": "com APENAS name (entrada mínima) -> só project_id + name + goal vazio, sem datas/status",
+          "status": "passed",
+          "durationMs": 13,
+          "code": "  test('com APENAS name (entrada mínima) -> só project_id + name + goal vazio, sem datas/status', () => {\n    // Verifica: classe de equivalência \"body mínimo\" — só o campo obrigatório.\n    // Técnica: Particionamento por Classe de Equivalência (entrada mínima válida).\n    // Arrange: projectId numérico e body só com name.\n    const projectId = 7;\n    const body = { name: 'Sprint 1' };\n\n    // Act\n    const resultado = montarInsertSprint(projectId, body);\n\n    // Assert: campos opcionais omitidos NÃO aparecem (banco aplica defaults).\n    expect(resultado).toEqual({ project_id: 7, name: 'Sprint 1', goal: '' });\n    expect(resultado).not.toHaveProperty('start_date');\n    expect(resultado).not.toHaveProperty('end_date');\n    expect(resultado).not.toHaveProperty('status');\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica a entrada mínima: com só o name, o insert traz project_id + name + goal vazio, sem datas/status.",
+          "expectedResult": "Retorna { project_id: 7, name: 'Sprint 1', goal: '' } sem start_date/end_date/status."
+        },
+        {
+          "name": "com body COMPLETO (todos truthy) -> todos os campos entram no insert",
+          "status": "passed",
+          "durationMs": 2,
+          "code": "  test('com body COMPLETO (todos truthy) -> todos os campos entram no insert', () => {\n    // Verifica: classe de equivalência \"body completo\" — todos os campos válidos.\n    // Técnica: Particionamento por Classe de Equivalência (entrada completa válida).\n    // Arrange: todos os campos presentes e truthy.\n    const body = {\n      name: 'Sprint Q3',\n      goal: 'Entregar o checkout',\n      start_date: '2026-06-01',\n      end_date: '2026-06-15',\n      status: 'active',\n    };\n\n    // Act\n    const resultado = montarInsertSprint(42, body);\n\n    // Assert: objeto reflete fielmente o body, com project_id já como Number.\n    expect(resultado).toEqual({\n      project_id: 42,\n      name: 'Sprint Q3',\n      goal: 'Entregar o checkout',\n      start_date: '2026-06-01',\n      end_date: '2026-06-15',\n      status: 'active',\n    });\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica que um body completo (todos os campos truthy) entra integralmente no insert.",
+          "expectedResult": "Retorna o objeto com project_id (número), name, goal, start_date, end_date e status."
+        },
+        {
+          "name": "projectId vindo como STRING (como no :param da rota) -> convertido para Number",
+          "status": "passed",
+          "durationMs": 3,
+          "code": "  test('projectId vindo como STRING (como no :param da rota) -> convertido para Number', () => {\n    // Verifica: project_id sai numérico mesmo recebendo string do parâmetro da URL.\n    // Técnica: Análise de Valor-Limite (fronteira de tipo string -> number).\n    // Arrange: projectId é string, como chega em req.params.projectId.\n    const projectId = '15';\n\n    // Act\n    const resultado = montarInsertSprint(projectId, { name: 'S' });\n\n    // Assert: tipo e valor convertidos via Number().\n    expect(resultado.project_id).toBe(15);\n    expect(typeof resultado.project_id).toBe('number');\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica que o projectId recebido como string (vindo do :param da URL) é convertido para número.",
+          "expectedResult": "project_id é 15 e do tipo number."
+        },
+        {
+          "name": "start_date/end_date/status como string VAZIA (falsy) -> NÃO entram no objeto",
+          "status": "passed",
+          "durationMs": 3,
+          "code": "  test('start_date/end_date/status como string VAZIA (falsy) -> NÃO entram no objeto', () => {\n    // Verifica: fronteira do \"if (truthy)\": '' é falsy, então os campos são omitidos.\n    // Técnica: Análise de Valor-Limite (string vazia na fronteira do truthy).\n    // Arrange: campos opcionais presentes porém vazios.\n    const body = { name: 'A', start_date: '', end_date: '', status: '' };\n\n    // Act\n    const resultado = montarInsertSprint(1, body);\n\n    // Assert: campos vazios não vazam pro insert (banco usa defaults).\n    expect(resultado).not.toHaveProperty('start_date');\n    expect(resultado).not.toHaveProperty('end_date');\n    expect(resultado).not.toHaveProperty('status');\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica a fronteira do truthy: campos opcionais com string vazia são omitidos do insert.",
+          "expectedResult": "O objeto não tem start_date, end_date nem status."
+        },
+        {
+          "name": "body AUSENTE (undefined) -> não quebra; retorna estrutura mínima",
+          "status": "passed",
+          "durationMs": 2,
+          "code": "  test('body AUSENTE (undefined) -> não quebra; retorna estrutura mínima', () => {\n    // Verifica: robustez — body undefined é tolerado (body || {}).\n    // Técnica: Análise de Valor-Limite / robustez (entrada nula/ausente).\n    // Arrange: nenhum body.\n    // Act\n    const resultado = montarInsertSprint(3 /* sem body */);\n\n    // Assert: name fica undefined (rota valida antes), goal '' e sem opcionais.\n    expect(resultado).toEqual({ project_id: 3, name: undefined, goal: '' });\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica a robustez do insert quando o body é undefined.",
+          "expectedResult": "Retorna { project_id: 3, name: undefined, goal: '' } sem quebrar."
+        },
+        {
+          "name": "só os campos ENVIADOS entram; os ausentes (undefined) somem",
+          "status": "passed",
+          "durationMs": 4,
+          "code": "  test('só os campos ENVIADOS entram; os ausentes (undefined) somem', () => {\n    // Verifica: PATCH parcial — campos não enviados não são tocados.\n    // Técnica: Particionamento por Classe de Equivalência (enviado vs. ausente).\n    // Arrange: body com 2 dos 5 campos da whitelist.\n    const body = { name: 'Novo nome', status: 'completed' };\n\n    // Act\n    const resultado = montarUpdatesSprint(body);\n\n    // Assert: só os 2 campos enviados aparecem.\n    expect(resultado).toEqual({ name: 'Novo nome', status: 'completed' });\n    expect(resultado).not.toHaveProperty('goal');\n    expect(resultado).not.toHaveProperty('start_date');\n    expect(resultado).not.toHaveProperty('end_date');\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica que o update parcial do sprint inclui só os campos enviados e omite os ausentes.",
+          "expectedResult": "Retorna { name, status } sem goal/start_date/end_date."
+        },
+        {
+          "name": "valor null é PRESERVADO (ex.: limpar a meta com goal: null)",
+          "status": "passed",
+          "durationMs": 17,
+          "code": "  test('valor null é PRESERVADO (ex.: limpar a meta com goal: null)', () => {\n    // Verifica: null != undefined; null é um valor enviado e deve passar.\n    // Técnica: Análise de Valor-Limite (fronteira null vs. undefined).\n    // Arrange: goal explicitamente null.\n    const body = { goal: null };\n\n    // Act\n    const resultado = montarUpdatesSprint(body);\n\n    // Assert: chave goal presente com valor null.\n    expect(resultado).toHaveProperty('goal', null);\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica que null é um valor enviado válido (ex.: limpar a meta) e é preservado no update.",
+          "expectedResult": "Retorna a chave goal com valor null."
+        },
+        {
+          "name": "campos FORA da whitelist (project_id, id, hacker) são IGNORADOS",
+          "status": "passed",
+          "durationMs": 2,
+          "code": "  test('campos FORA da whitelist (project_id, id, hacker) são IGNORADOS', () => {\n    // Verifica: só passam name/goal/start_date/end_date/status; o resto é descartado.\n    // Técnica: Particionamento por Classe de Equivalência (dentro vs. fora da whitelist).\n    // Arrange: mistura de campos válidos e proibidos.\n    const body = { name: 'OK', project_id: 999, id: 5, hacker: true };\n\n    // Act\n    const resultado = montarUpdatesSprint(body);\n\n    // Assert: só o campo da whitelist sobrevive.\n    expect(resultado).toEqual({ name: 'OK' });\n    expect(resultado).not.toHaveProperty('project_id');\n    expect(resultado).not.toHaveProperty('id');\n    expect(resultado).not.toHaveProperty('hacker');\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica que campos fora da lista branca (project_id/id/hacker) são ignorados no update.",
+          "expectedResult": "Retorna só { name: 'OK' }."
+        },
+        {
+          "name": "body AUSENTE (undefined) -> não quebra; retorna {}",
+          "status": "passed",
+          "durationMs": 2,
+          "code": "  test('body AUSENTE (undefined) -> não quebra; retorna {}', () => {\n    // Verifica: robustez — undefined é tolerado (body || {}).\n    // Técnica: Análise de Valor-Limite / robustez (entrada nula/ausente).\n    // Arrange: nenhum body.\n    // Act\n    const resultado = montarUpdatesSprint(undefined);\n\n    // Assert\n    expect(resultado).toEqual({});\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica a robustez do update parcial quando o body é undefined.",
+          "expectedResult": "Retorna {} sem quebrar."
+        }
+      ]
+    },
+    {
+      "name": "authMiddleware (porteiro das rotas protegidas)",
+      "file": "tests/middleware.test.js",
+      "tests": [
+        {
+          "name": "retorna 401 quando não envia o header Authorization",
+          "status": "passed",
+          "durationMs": 78,
+          "code": "  it('retorna 401 quando não envia o header Authorization', async () => {\n    // Arrange — nada a preparar: a requisição vai SEM header de autenticação.\n\n    // Act — chama a rota protegida sem mandar token.\n    const resposta = await request(app).get(ROTA_PROTEGIDA);\n\n    // Assert — porteiro barra com 401 e mensagem de token ausente.\n    expect(resposta.status).toBe(401);\n    expect(resposta.body.error).toBe('Token não fornecido');\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica, pela rota protegida real, que sem header Authorization o porteiro barra a requisição.",
+          "expectedResult": "Responde 401 com error \"Token não fornecido\"."
+        },
+        {
+          "name": "retorna 401 quando o token é inválido",
+          "status": "passed",
+          "durationMs": 13,
+          "code": "  it('retorna 401 quando o token é inválido', async () => {\n    // Arrange — um texto qualquer que NÃO é um JWT válido.\n    const tokenInvalido = 'isto-nao-e-um-jwt-de-verdade';\n\n    // Act — manda esse token quebrado no header Authorization.\n    const resposta = await request(app)\n      .get(ROTA_PROTEGIDA)\n      .set('Authorization', `Bearer ${tokenInvalido}`);\n\n    // Assert — porteiro barra com 401 e mensagem de token inválido.\n    expect(resposta.status).toBe(401);\n    expect(resposta.body.error).toBe('Token inválido ou expirado');\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica que um token quebrado (não decodificável) é barrado pelo middleware na rota real.",
+          "expectedResult": "Responde 401 com error \"Token inválido ou expirado\"."
+        },
+        {
+          "name": "retorna 401 quando o usuário do token não existe no banco",
+          "status": "passed",
+          "durationMs": 20,
+          "code": "  it('retorna 401 quando o usuário do token não existe no banco', async () => {\n    // Arrange — token válido apontando para um usuário inexistente (id fantasma).\n    const usuarioFantasma = { id: 99999, username: 'fantasma' };\n    const token = tokenDe(usuarioFantasma);\n\n    // Act — manda o token válido, mas o user nunca foi semeado no fake.\n    const resposta = await request(app)\n      .get(ROTA_PROTEGIDA)\n      .set('Authorization', `Bearer ${token}`);\n\n    // Assert — porteiro barra com 401 e mensagem de usuário não encontrado.\n    expect(resposta.status).toBe(401);\n    expect(resposta.body.error).toBe('Usuário não encontrado. Faça login novamente.');\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica que um token bem assinado de um usuário inexistente é barrado (protege contra conta deletada).",
+          "expectedResult": "Responde 401 com error \"Usuário não encontrado. Faça login novamente.\"."
+        },
+        {
+          "name": "retorna 200 quando o token é válido e o usuário existe no banco",
+          "status": "passed",
+          "durationMs": 23,
+          "code": "  it('retorna 200 quando o token é válido e o usuário existe no banco', async () => {\n    // Arrange — cria o usuário no fake e assina um token válido para ele.\n    const usuario = criarUsuario({ username: 'maria', email: 'maria@exemplo.com' });\n    const token = tokenDe(usuario);\n\n    // Act — chama a rota protegida com o token do usuário existente.\n    const resposta = await request(app)\n      .get(ROTA_PROTEGIDA)\n      .set('Authorization', `Bearer ${token}`);\n\n    // Assert — porteiro deixou passar; a rota respondeu 200.\n    expect(resposta.status).toBe(200);\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica o caminho feliz: token válido de usuário existente passa pelo middleware e a rota responde.",
+          "expectedResult": "Responde 200 (o middleware liberou a requisição)."
+        }
+      ]
+    },
+    {
+      "name": "GET /api/health",
+      "file": "tests/smoke.test.js",
+      "tests": [
+        {
+          "name": "retorna 200 com { status: \"ok\" }",
+          "status": "passed",
+          "durationMs": 94,
+          "code": "  it('retorna 200 com { status: \"ok\" }', async () => {\n    // Arrange — nada a preparar: health check é público e não usa banco.\n\n    // Act — faz a requisição HTTP no app em memória (sem subir porta real).\n    const resposta = await request(app).get('/api/health');\n\n    // Assert — status e corpo esperados.\n    expect(resposta.status).toBe(200);\n    expect(resposta.body).toEqual({ status: 'ok' });\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Teste de fumaça: verifica que a fundação (app + supertest + banco fake) está de pé pela rota de saúde.",
+          "expectedResult": "Responde 200 com { status: \"ok\" }."
+        }
+      ]
+    },
+    {
+      "name": "GET /api/invitations",
+      "file": "tests/invitations.test.js",
+      "tests": [
+        {
+          "name": "lista o convite pendente com dados do projeto e do convidador",
+          "status": "passed",
+          "durationMs": 122,
+          "code": "  it('lista o convite pendente com dados do projeto e do convidador', async () => {\n    // Arrange — dono cria projeto e convida o usuário logado.\n    const dono = criarUsuario({ username: 'dono', email: 'dono@ex.com' });\n    const convidado = criarUsuario({ username: 'bia', email: 'bia@ex.com' });\n    const projeto = criarProjeto({ name: 'App X', ownerId: dono.id, description: 'desc' });\n    criarConvite({ projectId: projeto.id, inviterId: dono.id, inviteeId: convidado.id, role: 'DEV' });\n\n    // Act — o convidado consulta seus convites pendentes.\n    const resposta = await request(app)\n      .get('/api/invitations')\n      .set('Authorization', `Bearer ${tokenDe(convidado)}`);\n\n    // Assert — veio 1 convite com os dados denormalizados esperados.\n    expect(resposta.status).toBe(200);\n    expect(resposta.body).toHaveLength(1);\n    expect(resposta.body[0]).toMatchObject({\n      project_id: projeto.id,\n      project_name: 'App X',\n      project_description: 'desc',\n      inviter_username: 'dono',\n      role: 'DEV',\n      status: 'pending',\n    });\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica que a listagem de convites traz o convite pendente já com os dados do projeto e de quem convidou.",
+          "expectedResult": "Responde 200 com 1 convite contendo project_name, project_description, inviter_username, role e status \"pending\"."
+        },
+        {
+          "name": "retorna 401 quando não há token",
+          "status": "passed",
+          "durationMs": 21,
+          "code": "  it('retorna 401 quando não há token', async () => {\n    // Arrange — nada: a requisição vai sem header Authorization.\n\n    // Act — chama a rota protegida sem token.\n    const resposta = await request(app).get('/api/invitations');\n\n    // Assert — middleware barra com 401.\n    expect(resposta.status).toBe(401);\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica que a listagem de convites é protegida e exige autenticação.",
+          "expectedResult": "Responde 401 (barrado pelo middleware)."
+        },
+        {
+          "name": "retorna 200 com { success: true } e o project_id ao aceitar",
+          "status": "passed",
+          "durationMs": 21,
+          "code": "  it('retorna 200 com { success: true } e o project_id ao aceitar', async () => {\n    // Arrange — convite pendente para o usuário logado.\n    const dono = criarUsuario({ username: 'dono', email: 'dono@ex.com' });\n    const convidado = criarUsuario({ username: 'bia', email: 'bia@ex.com' });\n    const projeto = criarProjeto({ name: 'App X', ownerId: dono.id });\n    const convite = criarConvite({ projectId: projeto.id, inviterId: dono.id, inviteeId: convidado.id });\n\n    // Act — o convidado aceita o convite.\n    const resposta = await request(app)\n      .post(`/api/invitations/${convite.id}/accept`)\n      .set('Authorization', `Bearer ${tokenDe(convidado)}`);\n\n    // Assert — sucesso e devolve o projeto do convite.\n    expect(resposta.status).toBe(200);\n    expect(resposta.body).toEqual({ success: true, project_id: projeto.id });\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica o caminho feliz de aceitar um convite pendente (o usuário vira membro).",
+          "expectedResult": "Responde 200 com { success: true, project_id }."
+        },
+        {
+          "name": "retorna 404 quando o convite não existe",
+          "status": "passed",
+          "durationMs": 21,
+          "code": "  it('retorna 404 quando o convite não existe', async () => {\n    // Arrange — usuário existe, mas não há convite com id 999.\n    const usuario = criarUsuario({ username: 'ana', email: 'ana@ex.com' });\n\n    // Act — tenta rejeitar um id que não existe.\n    const resposta = await request(app)\n      .post('/api/invitations/999/reject')\n      .set('Authorization', `Bearer ${tokenDe(usuario)}`);\n\n    // Assert — 404 com a mensagem padrão da rota.\n    expect(resposta.status).toBe(404);\n    expect(resposta.body).toEqual({ error: 'Convite não encontrado ou já respondido' });\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica que aceitar/rejeitar um convite inexistente retorna não encontrado.",
+          "expectedResult": "Responde 404 com error \"Convite não encontrado ou já respondido\"."
+        },
+        {
+          "name": "é idempotente: aceita com sucesso mesmo se o usuário já for membro (23505)",
+          "status": "passed",
+          "durationMs": 22,
+          "code": "  it('é idempotente: aceita com sucesso mesmo se o usuário já for membro (23505)', async () => {\n    // Arrange — usuário JÁ é membro do projeto e ainda tem um convite pendente.\n    const dono = criarUsuario({ username: 'dono', email: 'dono@ex.com' });\n    const convidado = criarUsuario({ username: 'bia', email: 'bia@ex.com' });\n    const projeto = criarProjeto({ name: 'App X', ownerId: dono.id });\n    criarMembro({ projectId: projeto.id, userId: convidado.id }); // já é membro -> insert dará 23505\n    const convite = criarConvite({ projectId: projeto.id, inviterId: dono.id, inviteeId: convidado.id });\n\n    // Act — aceita o convite (o insert de membership colide com o UNIQUE).\n    const resposta = await request(app)\n      .post(`/api/invitations/${convite.id}/accept`)\n      .set('Authorization', `Bearer ${tokenDe(convidado)}`);\n\n    // Assert — mesmo com o 23505, a rota trata como sucesso (idempotente).\n    expect(resposta.status).toBe(200);\n    expect(resposta.body).toEqual({ success: true, project_id: projeto.id });\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica a idempotência: aceitar quando o usuário já é membro (UNIQUE 23505) ainda responde sucesso.",
+          "expectedResult": "Responde 200 com { success: true, project_id } mesmo com o conflito de membership."
+        },
+        {
+          "name": "retorna 200 com { success: true } ao rejeitar um convite pendente",
+          "status": "passed",
+          "durationMs": 31,
+          "code": "  it('retorna 200 com { success: true } ao rejeitar um convite pendente', async () => {\n    // Arrange — convite pendente para o usuário logado.\n    const dono = criarUsuario({ username: 'dono', email: 'dono@ex.com' });\n    const convidado = criarUsuario({ username: 'bia', email: 'bia@ex.com' });\n    const projeto = criarProjeto({ name: 'App X', ownerId: dono.id });\n    const convite = criarConvite({ projectId: projeto.id, inviterId: dono.id, inviteeId: convidado.id });\n\n    // Act — o convidado rejeita o convite.\n    const resposta = await request(app)\n      .post(`/api/invitations/${convite.id}/reject`)\n      .set('Authorization', `Bearer ${tokenDe(convidado)}`);\n\n    // Assert — sucesso.\n    expect(resposta.status).toBe(200);\n    expect(resposta.body).toEqual({ success: true });\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica o caminho feliz de rejeitar um convite pendente.",
+          "expectedResult": "Responde 200 com { success: true }."
+        },
+        {
+          "name": "retorna 404 quando o convite não existe",
+          "status": "passed",
+          "durationMs": 26,
+          "code": "  it('retorna 404 quando o convite não existe', async () => {\n    // Arrange — usuário existe, mas não há convite com id 999.\n    const usuario = criarUsuario({ username: 'ana', email: 'ana@ex.com' });\n\n    // Act — tenta rejeitar um id que não existe.\n    const resposta = await request(app)\n      .post('/api/invitations/999/reject')\n      .set('Authorization', `Bearer ${tokenDe(usuario)}`);\n\n    // Assert — 404 com a mensagem padrão da rota.\n    expect(resposta.status).toBe(404);\n    expect(resposta.body).toEqual({ error: 'Convite não encontrado ou já respondido' });\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica que aceitar/rejeitar um convite inexistente retorna não encontrado.",
+          "expectedResult": "Responde 404 com error \"Convite não encontrado ou já respondido\"."
+        }
+      ]
+    },
+    {
+      "name": "GET /api/sprints/:sprintId/dashboard — métricas do sprint",
+      "file": "tests/dashboard.test.js",
+      "tests": [
+        {
+          "name": "retorna estrutura zerada quando o sprint não tem histórias",
+          "status": "passed",
+          "durationMs": 108,
+          "code": "  it('retorna estrutura zerada quando o sprint não tem histórias', async () => {\n    // Arrange — usuário existe (o middleware exige), mas o sprint 999 está vazio.\n    const user = criarUsuario({ username: 'ana', email: 'ana@x.com' });\n\n    // Act — pede o dashboard de um sprint sem histórias.\n    const resposta = await request(app)\n      .get('/api/sprints/999/dashboard')\n      .set('Authorization', `Bearer ${tokenDe(user)}`);\n\n    // Assert — status 200 e tudo zerado.\n    expect(resposta.status).toBe(200);\n    expect(resposta.body).toEqual({\n      totalPoints: 0,\n      completedPoints: 0,\n      progress: 0,\n      byStatus: { to_do: 0, in_progress: 0, in_review: 0, done: 0 },\n      storiesCount: 0,\n    });\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica que o dashboard de um sprint sem histórias devolve a estrutura zerada (US7).",
+          "expectedResult": "Responde 200 com totalPoints 0, completedPoints 0, progress 0, byStatus zerado e storiesCount 0."
+        },
+        {
+          "name": "calcula totais, concluídos, progresso e byStatus para um membro",
+          "status": "passed",
+          "durationMs": 34,
+          "code": "  it('calcula totais, concluídos, progresso e byStatus para um membro', async () => {\n    // Arrange — usuário membro do projeto, sprint com 4 histórias variadas.\n    const user = criarUsuario({ username: 'bob', email: 'bob@x.com' });\n    const projeto = criarProjeto({ name: 'Projeto X', ownerId: user.id });\n    criarMembro({ projectId: projeto.id, userId: user.id });\n    const [sprint] = fakeSupabase.__seed('sp_sprints', {\n      project_id: projeto.id, name: 'Sprint 1',\n    });\n    // 2 histórias done (3 + 5 = 8 pts), 1 in_progress (2 pts), 1 to_do (0 pt).\n    // Total = 10 pts; concluído = 8 pts; progresso = round(8/10*100) = 80.\n    criarStoryNoSprint({ projectId: projeto.id, sprintId: sprint.id, points: 3, status: 'done' });\n    criarStoryNoSprint({ projectId: projeto.id, sprintId: sprint.id, points: 5, status: 'done' });\n    criarStoryNoSprint({ projectId: projeto.id, sprintId: sprint.id, points: 2, status: 'in_progress' });\n    criarStoryNoSprint({ projectId: projeto.id, sprintId: sprint.id, points: 0, status: 'to_do' });\n\n    // Act — pede o dashboard do sprint.\n    const resposta = await request(app)\n      .get(`/api/sprints/${sprint.id}/dashboard`)\n      .set('Authorization', `Bearer ${tokenDe(user)}`);\n\n    // Assert — métricas calculadas como esperado.\n    expect(resposta.status).toBe(200);\n    expect(resposta.body).toEqual({\n      totalPoints: 10,\n      completedPoints: 8,\n      progress: 80,\n      byStatus: { to_do: 1, in_progress: 1, in_review: 0, done: 2 },\n      storiesCount: 4,\n    });\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica o cálculo das métricas do dashboard do sprint para um membro do projeto (US7).",
+          "expectedResult": "Responde 200 com totalPoints 10, completedPoints 8, progress 80%, byStatus {to_do:1,in_progress:1,in_review:0,done:2} e storiesCount 4."
+        },
+        {
+          "name": "retorna 403 quando o usuário não é membro do projeto",
+          "status": "passed",
+          "durationMs": 32,
+          "code": "  it('retorna 403 quando o usuário não é membro do projeto', async () => {\n    // Arrange — projeto de um dono; o intruso não é membro.\n    const dono = criarUsuario({ username: 'dono2', email: 'dono2@x.com' });\n    const intruso = criarUsuario({ username: 'intruso2', email: 'intruso2@x.com' });\n    const projeto = criarProjeto({ name: 'Projeto V', ownerId: dono.id });\n\n    // Act — intruso pede a velocity.\n    const resposta = await request(app)\n      .get(`/api/projects/${projeto.id}/velocity`)\n      .set('Authorization', `Bearer ${tokenDe(intruso)}`);\n\n    // Assert — acesso negado.\n    expect(resposta.status).toBe(403);\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica o controle de acesso: quem não é membro do projeto não vê o dashboard nem a velocity.",
+          "expectedResult": "Responde 403 (acesso negado)."
+        },
+        {
+          "name": "retorna 401 quando não há token de autenticação",
+          "status": "passed",
+          "durationMs": 14,
+          "code": "  it('retorna 401 quando não há token de autenticação', async () => {\n    // Arrange — nada a preparar; a requisição vai sem header Authorization.\n\n    // Act — pede o dashboard sem token.\n    const resposta = await request(app).get('/api/sprints/1/dashboard');\n\n    // Assert — barrado pela autenticação.\n    expect(resposta.status).toBe(401);\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica que o dashboard do sprint é protegido por autenticação.",
+          "expectedResult": "Responde 401 (barrado pela autenticação)."
+        },
+        {
+          "name": "retorna 403 quando o usuário não é membro do projeto",
+          "status": "passed",
+          "durationMs": 29,
+          "code": "  it('retorna 403 quando o usuário não é membro do projeto', async () => {\n    // Arrange — projeto de um dono; o intruso não é membro.\n    const dono = criarUsuario({ username: 'dono2', email: 'dono2@x.com' });\n    const intruso = criarUsuario({ username: 'intruso2', email: 'intruso2@x.com' });\n    const projeto = criarProjeto({ name: 'Projeto V', ownerId: dono.id });\n\n    // Act — intruso pede a velocity.\n    const resposta = await request(app)\n      .get(`/api/projects/${projeto.id}/velocity`)\n      .set('Authorization', `Bearer ${tokenDe(intruso)}`);\n\n    // Assert — acesso negado.\n    expect(resposta.status).toBe(403);\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica o controle de acesso: quem não é membro do projeto não vê o dashboard nem a velocity.",
+          "expectedResult": "Responde 403 (acesso negado)."
+        },
+        {
+          "name": "retorna velocity 0 e lista vazia quando não há sprints completados",
+          "status": "passed",
+          "durationMs": 40,
+          "code": "  it('retorna velocity 0 e lista vazia quando não há sprints completados', async () => {\n    // Arrange — membro com um sprint ainda em 'planning' (não conta na velocity).\n    const user = criarUsuario({ username: 'edu', email: 'edu@x.com' });\n    const projeto = criarProjeto({ name: 'Projeto W', ownerId: user.id });\n    criarMembro({ projectId: projeto.id, userId: user.id });\n    fakeSupabase.__seed('sp_sprints', { project_id: projeto.id, name: 'Sprint Aberto' });\n\n    // Act — pede a velocity.\n    const resposta = await request(app)\n      .get(`/api/projects/${projeto.id}/velocity`)\n      .set('Authorization', `Bearer ${tokenDe(user)}`);\n\n    // Assert — nada a medir ainda.\n    expect(resposta.status).toBe(200);\n    expect(resposta.body).toEqual({ velocity: 0, sprints: [] });\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica que sem sprints 'completed' a velocity é 0 e a lista de sprints vem vazia.",
+          "expectedResult": "Responde 200 com { velocity: 0, sprints: [] }."
+        },
+        {
+          "name": "calcula a velocity média dos sprints completados",
+          "status": "passed",
+          "durationMs": 28,
+          "code": "  it('calcula a velocity média dos sprints completados', async () => {\n    // Arrange — membro com 2 sprints 'completed'. Sprint A concluiu 8 pts\n    // (3+5, ambos done), Sprint B concluiu 4 pts (4 done). Histórias não-done\n    // e de sprint não-completado NÃO entram na conta.\n    const user = criarUsuario({ username: 'fab', email: 'fab@x.com' });\n    const projeto = criarProjeto({ name: 'Projeto Velocity', ownerId: user.id });\n    criarMembro({ projectId: projeto.id, userId: user.id });\n    const [sprintA] = fakeSupabase.__seed('sp_sprints', {\n      project_id: projeto.id, name: 'Sprint A', status: 'completed',\n    });\n    const [sprintB] = fakeSupabase.__seed('sp_sprints', {\n      project_id: projeto.id, name: 'Sprint B', status: 'completed',\n    });\n    // Sprint A: 8 pts concluídos.\n    criarStoryNoSprint({ projectId: projeto.id, sprintId: sprintA.id, points: 3, status: 'done' });\n    criarStoryNoSprint({ projectId: projeto.id, sprintId: sprintA.id, points: 5, status: 'done' });\n    // Sprint A também tem 1 história não concluída (não entra na soma).\n    criarStoryNoSprint({ projectId: projeto.id, sprintId: sprintA.id, points: 99, status: 'in_progress' });\n    // Sprint B: 4 pts concluídos.\n    criarStoryNoSprint({ projectId: projeto.id, sprintId: sprintB.id, points: 4, status: 'done' });\n\n    // Act — pede a velocity. Média = (8 + 4) / 2 = 6.\n    const resposta = await request(app)\n      .get(`/api/projects/${projeto.id}/velocity`)\n      .set('Authorization', `Bearer ${tokenDe(user)}`);\n\n    // Assert — velocity média e detalhamento por sprint.\n    expect(resposta.status).toBe(200);\n    expect(resposta.body).toEqual({\n      velocity: 6,\n      sprints: [\n        { id: sprintA.id, name: 'Sprint A', completed: 8 },\n        { id: sprintB.id, name: 'Sprint B', completed: 4 },\n      ],\n    });\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica o cálculo da velocity como média de pontos concluídos dos sprints completados, com detalhamento por sprint.",
+          "expectedResult": "Responde 200 com velocity 6 ((8+4)/2) e a lista com Sprint A (8) e Sprint B (4)."
+        }
+      ]
+    },
+    {
+      "name": "Rotas de Sprint",
+      "file": "tests/sprints.test.js",
+      "tests": [
+        {
+          "name": "retorna 201 e cria o sprint com status padrao \"planning\" quando o usuario e membro",
+          "status": "passed",
+          "durationMs": 146,
+          "code": "    it('retorna 201 e cria o sprint com status padrao \"planning\" quando o usuario e membro', async () => {\n      // Arrange — usuario membro de um projeto.\n      const usuario = criarUsuario({ username: 'ana', email: 'ana@test.com' });\n      const projeto = criarProjeto({ name: 'App', ownerId: usuario.id });\n      criarMembro({ projectId: projeto.id, userId: usuario.id });\n\n      // Act — cria o sprint só com o nome (deixa o status default agir).\n      const resposta = await request(app)\n        .post(`/api/projects/${projeto.id}/sprints`)\n        .set('Authorization', `Bearer ${tokenDe(usuario)}`)\n        .send({ name: 'Sprint 1' });\n\n      // Assert — 201 e sprint criado com status \"planning\" e o nome enviado.\n      expect(resposta.status).toBe(201);\n      expect(resposta.body).toMatchObject({ name: 'Sprint 1', status: 'planning' });\n    });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica o caminho feliz: um membro cria um sprint e o banco aplica o status padrão \"planning\" (US4).",
+          "expectedResult": "Responde 201 com o sprint criado, name \"Sprint 1\" e status \"planning\"."
+        },
+        {
+          "name": "retorna 400 quando o nome do sprint nao e enviado",
+          "status": "passed",
+          "durationMs": 34,
+          "code": "    it('retorna 400 quando o nome do sprint nao e enviado', async () => {\n      // Arrange — usuario membro (para garantir que o 400 vem da falta de nome, nao do acesso).\n      const usuario = criarUsuario({ username: 'bia', email: 'bia@test.com' });\n      const projeto = criarProjeto({ name: 'App', ownerId: usuario.id });\n      criarMembro({ projectId: projeto.id, userId: usuario.id });\n\n      // Act — envia o body sem \"name\".\n      const resposta = await request(app)\n        .post(`/api/projects/${projeto.id}/sprints`)\n        .set('Authorization', `Bearer ${tokenDe(usuario)}`)\n        .send({ goal: 'sem nome' });\n\n      // Assert — 400 (Nome e obrigatorio).\n      expect(resposta.status).toBe(400);\n    });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica a validação de entrada: criar sprint sem o campo name é recusado.",
+          "expectedResult": "Responde 400 (nome é obrigatório)."
+        },
+        {
+          "name": "retorna 403 quando o usuario nao e membro do projeto",
+          "status": "passed",
+          "durationMs": 25,
+          "code": "    it('retorna 403 quando o usuario nao e membro do projeto', async () => {\n      // Arrange — usuario existe, mas NAO foi adicionado como membro do projeto.\n      const usuario = criarUsuario({ username: 'caio', email: 'caio@test.com' });\n      const projeto = criarProjeto({ name: 'App', ownerId: usuario.id });\n\n      // Act — tenta criar o sprint com nome valido.\n      const resposta = await request(app)\n        .post(`/api/projects/${projeto.id}/sprints`)\n        .set('Authorization', `Bearer ${tokenDe(usuario)}`)\n        .send({ name: 'Sprint 1' });\n\n      // Assert — 403 (nao e membro deste projeto).\n      expect(resposta.status).toBe(403);\n    });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica o controle de acesso: quem não é membro do projeto não pode criar sprint.",
+          "expectedResult": "Responde 403 (não é membro do projeto)."
+        },
+        {
+          "name": "retorna 200 com a lista de sprints do projeto para um membro",
+          "status": "passed",
+          "durationMs": 101,
+          "code": "    it('retorna 200 com a lista de sprints do projeto para um membro', async () => {\n      // Arrange — usuario membro + um sprint ja semeado no projeto.\n      const usuario = criarUsuario({ username: 'duda', email: 'duda@test.com' });\n      const projeto = criarProjeto({ name: 'App', ownerId: usuario.id });\n      criarMembro({ projectId: projeto.id, userId: usuario.id });\n      await request(app)\n        .post(`/api/projects/${projeto.id}/sprints`)\n        .set('Authorization', `Bearer ${tokenDe(usuario)}`)\n        .send({ name: 'Sprint 1' });\n\n      // Act — lista os sprints do projeto.\n      const resposta = await request(app)\n        .get(`/api/projects/${projeto.id}/sprints`)\n        .set('Authorization', `Bearer ${tokenDe(usuario)}`);\n\n      // Assert — 200 e a lista tem o sprint criado.\n      expect(resposta.status).toBe(200);\n      expect(resposta.body).toHaveLength(1);\n    });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica que um membro consegue listar os sprints do projeto.",
+          "expectedResult": "Responde 200 com a lista contendo o sprint criado."
+        },
+        {
+          "name": "retorna 403 quando quem lista nao e membro do projeto",
+          "status": "passed",
+          "durationMs": 25,
+          "code": "    it('retorna 403 quando quem lista nao e membro do projeto', async () => {\n      // Arrange — usuario existe, mas nao e membro.\n      const usuario = criarUsuario({ username: 'edu', email: 'edu@test.com' });\n      const projeto = criarProjeto({ name: 'App', ownerId: usuario.id });\n\n      // Act — tenta listar os sprints.\n      const resposta = await request(app)\n        .get(`/api/projects/${projeto.id}/sprints`)\n        .set('Authorization', `Bearer ${tokenDe(usuario)}`);\n\n      // Assert — 403 (nao e membro deste projeto).\n      expect(resposta.status).toBe(403);\n    });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica o controle de acesso na listagem de sprints: não-membro é bloqueado.",
+          "expectedResult": "Responde 403 (não é membro do projeto)."
+        },
+        {
+          "name": "retorna 200 e atualiza apenas os campos enviados quando o usuario e membro",
+          "status": "passed",
+          "durationMs": 39,
+          "code": "    it('retorna 200 e atualiza apenas os campos enviados quando o usuario e membro', async () => {\n      // Arrange — usuario membro + um sprint criado para depois atualizar.\n      const usuario = criarUsuario({ username: 'flavia', email: 'flavia@test.com' });\n      const projeto = criarProjeto({ name: 'App', ownerId: usuario.id });\n      criarMembro({ projectId: projeto.id, userId: usuario.id });\n      const criado = await request(app)\n        .post(`/api/projects/${projeto.id}/sprints`)\n        .set('Authorization', `Bearer ${tokenDe(usuario)}`)\n        .send({ name: 'Sprint 1', goal: 'objetivo antigo' });\n\n      // Act — atualiza somente o campo \"goal\".\n      const resposta = await request(app)\n        .put(`/api/sprints/${criado.body.id}`)\n        .set('Authorization', `Bearer ${tokenDe(usuario)}`)\n        .send({ goal: 'objetivo novo' });\n\n      // Assert — 200 e o goal foi atualizado (e o nome continua o mesmo).\n      expect(resposta.status).toBe(200);\n      expect(resposta.body).toMatchObject({ name: 'Sprint 1', goal: 'objetivo novo' });\n    });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica a atualização parcial do sprint: só o campo enviado (goal) muda, o resto permanece.",
+          "expectedResult": "Responde 200 com name \"Sprint 1\" e goal \"objetivo novo\"."
+        },
+        {
+          "name": "retorna 404 quando o sprint nao existe",
+          "status": "passed",
+          "durationMs": 17,
+          "code": "    it('retorna 404 quando o sprint nao existe', async () => {\n      // Arrange — usuario valido, mas o id 999 nao corresponde a nenhum sprint.\n      const usuario = criarUsuario({ username: 'gil', email: 'gil@test.com' });\n\n      // Act — tenta atualizar um sprint inexistente.\n      const resposta = await request(app)\n        .put('/api/sprints/999')\n        .set('Authorization', `Bearer ${tokenDe(usuario)}`)\n        .send({ goal: 'qualquer' });\n\n      // Assert — 404 (Sprint nao encontrado).\n      expect(resposta.status).toBe(404);\n    });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica que atualizar um sprint inexistente retorna não encontrado.",
+          "expectedResult": "Responde 404 (Sprint não encontrado)."
+        },
+        {
+          "name": "retorna 403 quando o usuario nao e membro do projeto do sprint",
+          "status": "passed",
+          "durationMs": 53,
+          "code": "    it('retorna 403 quando o usuario nao e membro do projeto do sprint', async () => {\n      // Arrange — o sprint foi criado pelo dono; um SEGUNDO usuario (nao-membro) tentara editar.\n      const dono = criarUsuario({ username: 'helena', email: 'helena@test.com' });\n      const projeto = criarProjeto({ name: 'App', ownerId: dono.id });\n      criarMembro({ projectId: projeto.id, userId: dono.id });\n      const criado = await request(app)\n        .post(`/api/projects/${projeto.id}/sprints`)\n        .set('Authorization', `Bearer ${tokenDe(dono)}`)\n        .send({ name: 'Sprint 1' });\n      const estranho = criarUsuario({ username: 'igor', email: 'igor@test.com' });\n\n      // Act — o usuario estranho (nao-membro) tenta atualizar o sprint.\n      const resposta = await request(app)\n        .put(`/api/sprints/${criado.body.id}`)\n        .set('Authorization', `Bearer ${tokenDe(estranho)}`)\n        .send({ goal: 'invasao' });\n\n      // Assert — 403 (nao e membro deste projeto).\n      expect(resposta.status).toBe(403);\n    });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica o controle de acesso: o sprint existe, mas quem edita não é membro do projeto dele.",
+          "expectedResult": "Responde 403 (não é membro do projeto)."
+        },
+        {
+          "name": "retorna 200 com { success: true } quando o membro deleta o sprint",
+          "status": "passed",
+          "durationMs": 41,
+          "code": "    it('retorna 200 com { success: true } quando o membro deleta o sprint', async () => {\n      // Arrange — usuario membro + um sprint criado para deletar.\n      const usuario = criarUsuario({ username: 'joana', email: 'joana@test.com' });\n      const projeto = criarProjeto({ name: 'App', ownerId: usuario.id });\n      criarMembro({ projectId: projeto.id, userId: usuario.id });\n      const criado = await request(app)\n        .post(`/api/projects/${projeto.id}/sprints`)\n        .set('Authorization', `Bearer ${tokenDe(usuario)}`)\n        .send({ name: 'Sprint 1' });\n\n      // Act — deleta o sprint recem-criado.\n      const resposta = await request(app)\n        .delete(`/api/sprints/${criado.body.id}`)\n        .set('Authorization', `Bearer ${tokenDe(usuario)}`);\n\n      // Assert — 200 com confirmacao de sucesso.\n      expect(resposta.status).toBe(200);\n      expect(resposta.body).toEqual({ success: true });\n    });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica o caminho feliz: um membro deleta o sprint.",
+          "expectedResult": "Responde 200 com { success: true }."
+        },
+        {
+          "name": "retorna 404 quando o sprint a deletar nao existe",
+          "status": "passed",
+          "durationMs": 19,
+          "code": "    it('retorna 404 quando o sprint a deletar nao existe', async () => {\n      // Arrange — usuario valido, mas o id 999 nao corresponde a nenhum sprint.\n      const usuario = criarUsuario({ username: 'kleber', email: 'kleber@test.com' });\n\n      // Act — tenta deletar um sprint inexistente.\n      const resposta = await request(app)\n        .delete('/api/sprints/999')\n        .set('Authorization', `Bearer ${tokenDe(usuario)}`);\n\n      // Assert — 404 (Sprint nao encontrado).\n      expect(resposta.status).toBe(404);\n    });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica que deletar um sprint inexistente retorna não encontrado.",
+          "expectedResult": "Responde 404 (Sprint não encontrado)."
+        }
+      ]
+    },
+    {
+      "name": "POST /api/projects (criar projeto)",
+      "file": "tests/projects.test.js",
+      "tests": [
+        {
+          "name": "retorna 201 com o projeto criado quando recebe um nome",
+          "status": "passed",
+          "durationMs": 136,
+          "code": "  it('retorna 201 com o projeto criado quando recebe um nome', async () => {\n    // Arrange — cria o usuario dono e seu token.\n    const dono = criarUsuario({ username: 'ana', email: 'ana@x.com' });\n\n    // Act — envia o POST autenticado com o nome do projeto.\n    const resposta = await request(app)\n      .post('/api/projects')\n      .set('Authorization', `Bearer ${tokenDe(dono)}`)\n      .send({ name: 'Projeto X', description: 'desc' });\n\n    // Assert — status 201 e o corpo traz o projeto com o owner correto.\n    expect(resposta.status).toBe(201);\n    expect(resposta.body).toMatchObject({ name: 'Projeto X', owner_id: dono.id });\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica o caminho feliz de criar um projeto com nome, registrando o dono (US2).",
+          "expectedResult": "Responde 201 com o projeto criado (name e owner_id corretos)."
+        },
+        {
+          "name": "retorna 400 quando o nome nao e enviado",
+          "status": "passed",
+          "durationMs": 25,
+          "code": "  it('retorna 400 quando o nome nao e enviado', async () => {\n    // Arrange — usuario valido, mas vamos omitir o nome no corpo.\n    const dono = criarUsuario({ username: 'caio', email: 'caio@x.com' });\n\n    // Act — envia o POST sem o campo \"name\".\n    const resposta = await request(app)\n      .post('/api/projects')\n      .set('Authorization', `Bearer ${tokenDe(dono)}`)\n      .send({ description: 'sem nome' });\n\n    // Assert — status 400 (requisicao invalida).\n    expect(resposta.status).toBe(400);\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica a validação: criar projeto sem o campo name é recusado.",
+          "expectedResult": "Responde 400 (nome é obrigatório)."
+        },
+        {
+          "name": "retorna so os projetos em que o usuario e membro",
+          "status": "passed",
+          "durationMs": 35,
+          "code": "  it('retorna so os projetos em que o usuario e membro', async () => {\n    // Arrange — o usuario e membro do projeto A, mas NAO do projeto B.\n    const usuario = criarUsuario({ username: 'dani', email: 'dani@x.com' });\n    const projetoA = criarProjeto({ name: 'A', ownerId: usuario.id });\n    criarProjeto({ name: 'B', ownerId: 999 }); // projeto de outro dono\n    criarMembro({ projectId: projetoA.id, userId: usuario.id, role: 'PO' });\n\n    // Act — pede a lista de projetos do usuario.\n    const resposta = await request(app)\n      .get('/api/projects')\n      .set('Authorization', `Bearer ${tokenDe(usuario)}`);\n\n    // Assert — vem exatamente 1 projeto (o A), com o role anexado.\n    expect(resposta.status).toBe(200);\n    expect(resposta.body).toHaveLength(1);\n    expect(resposta.body[0]).toMatchObject({ name: 'A', role: 'PO' });\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica que a listagem traz apenas os projetos em que o usuário é membro, com o papel anexado.",
+          "expectedResult": "Responde 200 com 1 projeto (o \"A\") e role \"PO\"."
+        },
+        {
+          "name": "retorna lista vazia quando o usuario nao e membro de nada",
+          "status": "passed",
+          "durationMs": 17,
+          "code": "  it('retorna lista vazia quando o usuario nao e membro de nada', async () => {\n    // Arrange — usuario sem nenhuma membership criada.\n    const usuario = criarUsuario({ username: 'edu', email: 'edu@x.com' });\n\n    // Act — pede a lista de projetos.\n    const resposta = await request(app)\n      .get('/api/projects')\n      .set('Authorization', `Bearer ${tokenDe(usuario)}`);\n\n    // Assert — corpo e um array vazio.\n    expect(resposta.body).toEqual([]);\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica o early return quando o usuário não tem nenhuma membership.",
+          "expectedResult": "Responde com um array vazio []."
+        },
+        {
+          "name": "retorna 200 quando o dono deleta o proprio projeto",
+          "status": "passed",
+          "durationMs": 20,
+          "code": "  it('retorna 200 quando o dono deleta o proprio projeto', async () => {\n    // Arrange — cria o dono e um projeto que pertence a ele.\n    const dono = criarUsuario({ username: 'fp', email: 'fp@x.com' });\n    const projeto = criarProjeto({ name: 'Del', ownerId: dono.id });\n\n    // Act — dono manda o DELETE no proprio projeto.\n    const resposta = await request(app)\n      .delete(`/api/projects/${projeto.id}`)\n      .set('Authorization', `Bearer ${tokenDe(dono)}`);\n\n    // Assert — status 200 e confirmacao de sucesso.\n    expect(resposta.status).toBe(200);\n    expect(resposta.body).toEqual({ success: true });\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica que o dono consegue deletar o próprio projeto.",
+          "expectedResult": "Responde 200 com { success: true }."
+        },
+        {
+          "name": "retorna 403 quando quem deleta nao e o dono",
+          "status": "passed",
+          "durationMs": 22,
+          "code": "  it('retorna 403 quando quem deleta nao e o dono', async () => {\n    // Arrange — projeto pertence ao dono; outro usuario tenta apagar.\n    const dono = criarUsuario({ username: 'gabi', email: 'gabi@x.com' });\n    const intruso = criarUsuario({ username: 'hugo', email: 'hugo@x.com' });\n    const projeto = criarProjeto({ name: 'NaoSeu', ownerId: dono.id });\n\n    // Act — o intruso tenta deletar.\n    const resposta = await request(app)\n      .delete(`/api/projects/${projeto.id}`)\n      .set('Authorization', `Bearer ${tokenDe(intruso)}`);\n\n    // Assert — acesso negado (403).\n    expect(resposta.status).toBe(403);\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica o controle de acesso: só o dono pode deletar o projeto.",
+          "expectedResult": "Responde 403 (acesso negado)."
+        },
+        {
+          "name": "retorna 404 quando o projeto nao existe",
+          "status": "passed",
+          "durationMs": 19,
+          "code": "  it('retorna 404 quando o projeto nao existe', async () => {\n    // Arrange — usuario valido, mas o id 999 nao corresponde a nenhum projeto.\n    const usuario = criarUsuario({ username: 'ivo', email: 'ivo@x.com' });\n\n    // Act — tenta deletar um id que nao existe.\n    const resposta = await request(app)\n      .delete('/api/projects/999')\n      .set('Authorization', `Bearer ${tokenDe(usuario)}`);\n\n    // Assert — projeto nao encontrado (404).\n    expect(resposta.status).toBe(404);\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica que deletar um projeto inexistente retorna não encontrado.",
+          "expectedResult": "Responde 404 (projeto não encontrado)."
+        },
+        {
+          "name": "retorna 201 com o convite quando o dono convida um usuario existente",
+          "status": "passed",
+          "durationMs": 23,
+          "code": "  it('retorna 201 com o convite quando o dono convida um usuario existente', async () => {\n    // Arrange — dono com projeto + um usuario a ser convidado.\n    const dono = criarUsuario({ username: 'joao', email: 'joao@x.com' });\n    const convidado = criarUsuario({ username: 'kim', email: 'kim@x.com' });\n    const projeto = criarProjeto({ name: 'Conv', ownerId: dono.id });\n\n    // Act — dono convida o usuario pelo email, no papel de DEV.\n    const resposta = await request(app)\n      .post(`/api/projects/${projeto.id}/members`)\n      .set('Authorization', `Bearer ${tokenDe(dono)}`)\n      .send({ identifier: 'kim@x.com', role: 'DEV' });\n\n    // Assert — convite criado (201), com status pendente e o convidado certo.\n    expect(resposta.status).toBe(201);\n    expect(resposta.body).toMatchObject({\n      status: 'pending',\n      role: 'DEV',\n      invitee: { id: convidado.id },\n    });\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica o caminho feliz de convidar um membro: o dono cria um convite pendente para um usuário existente (US2).",
+          "expectedResult": "Responde 201 com o convite (status \"pending\", role \"DEV\" e o convidado certo)."
+        },
+        {
+          "name": "retorna 400 quando faltam identifier ou role",
+          "status": "passed",
+          "durationMs": 23,
+          "code": "  it('retorna 400 quando faltam identifier ou role', async () => {\n    // Arrange — dono com projeto; vamos mandar o corpo sem o role.\n    const dono = criarUsuario({ username: 'lia', email: 'lia@x.com' });\n    const projeto = criarProjeto({ name: 'Falta', ownerId: dono.id });\n\n    // Act — convida passando so o identifier (sem role).\n    const resposta = await request(app)\n      .post(`/api/projects/${projeto.id}/members`)\n      .set('Authorization', `Bearer ${tokenDe(dono)}`)\n      .send({ identifier: 'alguem@x.com' });\n\n    // Assert — requisicao invalida (400).\n    expect(resposta.status).toBe(400);\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica a validação do convite: faltando identifier ou role, é recusado.",
+          "expectedResult": "Responde 400 (campos obrigatórios faltando)."
+        },
+        {
+          "name": "retorna 400 quando o dono tenta se convidar",
+          "status": "passed",
+          "durationMs": 18,
+          "code": "  it('retorna 400 quando o dono tenta se convidar', async () => {\n    // Arrange — dono do projeto usando o proprio email como convidado.\n    const dono = criarUsuario({ username: 'self', email: 'self@x.com' });\n    const projeto = criarProjeto({ name: 'Auto', ownerId: dono.id });\n\n    // Act — o dono envia um convite apontando para o proprio email.\n    const resposta = await request(app)\n      .post(`/api/projects/${projeto.id}/members`)\n      .set('Authorization', `Bearer ${tokenDe(dono)}`)\n      .send({ identifier: 'self@x.com', role: 'DEV' });\n\n    // Assert — autoconvite recusado com 400.\n    expect(resposta.status).toBe(400);\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica a regra de autoconvite: o dono não pode convidar a si mesmo.",
+          "expectedResult": "Responde 400 (autoconvite recusado)."
+        },
+        {
+          "name": "retorna 403 quando quem convida nao e o dono",
+          "status": "passed",
+          "durationMs": 16,
+          "code": "  it('retorna 403 quando quem convida nao e o dono', async () => {\n    // Arrange — projeto e do dono; outro usuario (intruso) tenta convidar.\n    const dono = criarUsuario({ username: 'mara', email: 'mara@x.com' });\n    const intruso = criarUsuario({ username: 'ney', email: 'ney@x.com' });\n    criarUsuario({ username: 'alvo', email: 'alvo@x.com' });\n    const projeto = criarProjeto({ name: 'Priv', ownerId: dono.id });\n\n    // Act — o intruso tenta convidar o \"alvo\".\n    const resposta = await request(app)\n      .post(`/api/projects/${projeto.id}/members`)\n      .set('Authorization', `Bearer ${tokenDe(intruso)}`)\n      .send({ identifier: 'alvo@x.com', role: 'DEV' });\n\n    // Assert — apenas o dono convida; intruso recebe 403.\n    expect(resposta.status).toBe(403);\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica o controle de acesso: só o dono do projeto pode convidar membros.",
+          "expectedResult": "Responde 403 (acesso negado)."
+        },
+        {
+          "name": "retorna 404 quando o usuario convidado nao existe",
+          "status": "passed",
+          "durationMs": 17,
+          "code": "  it('retorna 404 quando o usuario convidado nao existe', async () => {\n    // Arrange — dono com projeto; o email convidado nao pertence a ninguem.\n    const dono = criarUsuario({ username: 'olga', email: 'olga@x.com' });\n    const projeto = criarProjeto({ name: 'Fantasma', ownerId: dono.id });\n\n    // Act — convida um email inexistente.\n    const resposta = await request(app)\n      .post(`/api/projects/${projeto.id}/members`)\n      .set('Authorization', `Bearer ${tokenDe(dono)}`)\n      .send({ identifier: 'ninguem@x.com', role: 'DEV' });\n\n    // Assert — usuario nao encontrado (404).\n    expect(resposta.status).toBe(404);\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica que convidar um e-mail/usuário inexistente retorna não encontrado.",
+          "expectedResult": "Responde 404 (usuário não encontrado)."
+        },
+        {
+          "name": "retorna 409 quando o usuario ja e membro do projeto",
+          "status": "passed",
+          "durationMs": 19,
+          "code": "  it('retorna 409 quando o usuario ja e membro do projeto', async () => {\n    // Arrange — o convidado ja e membro do projeto.\n    const dono = criarUsuario({ username: 'paulo', email: 'paulo@x.com' });\n    const jaMembro = criarUsuario({ username: 'rita', email: 'rita@x.com' });\n    const projeto = criarProjeto({ name: 'JaTem', ownerId: dono.id });\n    criarMembro({ projectId: projeto.id, userId: jaMembro.id, role: 'DEV' });\n\n    // Act — dono tenta convidar quem ja faz parte.\n    const resposta = await request(app)\n      .post(`/api/projects/${projeto.id}/members`)\n      .set('Authorization', `Bearer ${tokenDe(dono)}`)\n      .send({ identifier: 'rita@x.com', role: 'DEV' });\n\n    // Assert — conflito (409): ja e membro.\n    expect(resposta.status).toBe(409);\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica a regra de conflito: convidar alguém que já é membro do projeto é recusado.",
+          "expectedResult": "Responde 409 (conflito: já é membro)."
+        },
+        {
+          "name": "retorna 200 e a lista de membros quando quem pede e membro",
+          "status": "passed",
+          "durationMs": 17,
+          "code": "  it('retorna 200 e a lista de membros quando quem pede e membro', async () => {\n    // Arrange — usuario e membro do projeto.\n    const dono = criarUsuario({ username: 'ugo', email: 'ugo@x.com' });\n    const projeto = criarProjeto({ name: 'Lista', ownerId: dono.id });\n    criarMembro({ projectId: projeto.id, userId: dono.id, role: 'PO' });\n\n    // Act — pede a lista de membros.\n    const resposta = await request(app)\n      .get(`/api/projects/${projeto.id}/members`)\n      .set('Authorization', `Bearer ${tokenDe(dono)}`);\n\n    // Assert — status 200 e o membro aparece com username e role.\n    expect(resposta.status).toBe(200);\n    expect(resposta.body[0]).toMatchObject({ username: 'ugo', role: 'PO' });\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica que um membro consegue listar os membros do projeto.",
+          "expectedResult": "Responde 200 com a lista de membros (username e role)."
+        },
+        {
+          "name": "retorna 403 quando quem pede nao e membro do projeto",
+          "status": "passed",
+          "durationMs": 14,
+          "code": "  it('retorna 403 quando quem pede nao e membro do projeto', async () => {\n    // Arrange — projeto existe, mas o usuario nao tem membership nele.\n    const dono = criarUsuario({ username: 'vera', email: 'vera@x.com' });\n    const estranho = criarUsuario({ username: 'will', email: 'will@x.com' });\n    const projeto = criarProjeto({ name: 'Fechado', ownerId: dono.id });\n\n    // Act — o estranho tenta listar os membros.\n    const resposta = await request(app)\n      .get(`/api/projects/${projeto.id}/members`)\n      .set('Authorization', `Bearer ${tokenDe(estranho)}`);\n\n    // Assert — acesso negado (403): nao e membro.\n    expect(resposta.status).toBe(403);\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica o controle de acesso na listagem de membros: não-membro é bloqueado.",
+          "expectedResult": "Responde 403 (acesso negado)."
+        }
+      ]
+    },
+    {
+      "name": "POST /api/projects/:projectId/stories",
+      "file": "tests/stories.test.js",
+      "tests": [
+        {
+          "name": "retorna 201 e cria a história com os defaults quando o usuário é membro",
+          "status": "passed",
+          "durationMs": 165,
+          "code": "  it('retorna 201 e cria a história com os defaults quando o usuário é membro', async () => {\n    // Arrange — usuário membro de um projeto e seu token.\n    const { user, projeto } = cenarioMembroComProjeto();\n\n    // Act — envia o título mínimo necessário pra criar a história.\n    const resposta = await request(app)\n      .post(`/api/projects/${projeto.id}/stories`)\n      .set('Authorization', `Bearer ${tokenDe(user)}`)\n      .send({ title: 'Tela de login' });\n\n    // Assert — criada (201) com os defaults esperados do schema.\n    expect(resposta.status).toBe(201);\n    expect(resposta.body).toMatchObject({\n      title: 'Tela de login',\n      status: 'to_do',\n      story_points: 0,\n      label: 'feature',\n    });\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica o caminho feliz de criar história no backlog, com os defaults do schema (US3).",
+          "expectedResult": "Responde 201 com title, status \"to_do\", story_points 0 e label \"feature\"."
+        },
+        {
+          "name": "retorna 400 quando o título não é enviado",
+          "status": "passed",
+          "durationMs": 31,
+          "code": "  it('retorna 400 quando o título não é enviado', async () => {\n    // Arrange — usuário membro, mas vamos mandar um corpo sem title.\n    const { user, projeto } = cenarioMembroComProjeto();\n\n    // Act — envia corpo vazio (sem title).\n    const resposta = await request(app)\n      .post(`/api/projects/${projeto.id}/stories`)\n      .set('Authorization', `Bearer ${tokenDe(user)}`)\n      .send({});\n\n    // Assert — recusado por falta de título.\n    expect(resposta.status).toBe(400);\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica a validação: criar história sem o título é recusado.",
+          "expectedResult": "Responde 400 (título é obrigatório)."
+        },
+        {
+          "name": "retorna 403 quando o usuário não é membro do projeto",
+          "status": "passed",
+          "durationMs": 31,
+          "code": "  it('retorna 403 quando o usuário não é membro do projeto', async () => {\n    // Arrange — usuário válido e projeto, mas sem vínculo de membro.\n    const user = criarUsuario({ username: 'caio', email: 'caio@ex.com' });\n    const projeto = criarProjeto({ name: 'Projeto Alheio', ownerId: 999 });\n\n    // Act — tenta listar o backlog de projeto onde não participa.\n    const resposta = await request(app)\n      .get(`/api/projects/${projeto.id}/stories`)\n      .set('Authorization', `Bearer ${tokenDe(user)}`);\n\n    // Assert — bloqueado.\n    expect(resposta.status).toBe(403);\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica o controle de acesso: quem não é membro do projeto não cria nem lista histórias nele.",
+          "expectedResult": "Responde 403 (acesso negado)."
+        },
+        {
+          "name": "retorna apenas as histórias do backlog (sem sprint)",
+          "status": "passed",
+          "durationMs": 28,
+          "code": "  it('retorna apenas as histórias do backlog (sem sprint)', async () => {\n    // Arrange — uma história no backlog (sprint_id null por default) e outra já\n    // dentro de um sprint (sprint_id preenchido).\n    const { user, projeto } = cenarioMembroComProjeto();\n    fakeSupabase.__seed('sp_user_stories', { project_id: projeto.id, title: 'No backlog' });\n    fakeSupabase.__seed('sp_user_stories', { project_id: projeto.id, title: 'Já no sprint', sprint_id: 50 });\n\n    // Act — lista o backlog (sem o parâmetro include=all).\n    const resposta = await request(app)\n      .get(`/api/projects/${projeto.id}/stories`)\n      .set('Authorization', `Bearer ${tokenDe(user)}`);\n\n    // Assert — só a história do backlog aparece.\n    expect(resposta.status).toBe(200);\n    expect(resposta.body).toHaveLength(1);\n    expect(resposta.body[0].title).toBe('No backlog');\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica que o backlog lista só as histórias sem sprint (sprint_id null), ignorando as já movidas (US3).",
+          "expectedResult": "Responde 200 com 1 história (a \"No backlog\")."
+        },
+        {
+          "name": "retorna todas as histórias quando include=all",
+          "status": "passed",
+          "durationMs": 28,
+          "code": "  it('retorna todas as histórias quando include=all', async () => {\n    // Arrange — uma no backlog e uma em sprint.\n    const { user, projeto } = cenarioMembroComProjeto();\n    fakeSupabase.__seed('sp_user_stories', { project_id: projeto.id, title: 'No backlog' });\n    fakeSupabase.__seed('sp_user_stories', { project_id: projeto.id, title: 'Já no sprint', sprint_id: 50 });\n\n    // Act — pede a listagem completa.\n    const resposta = await request(app)\n      .get(`/api/projects/${projeto.id}/stories?include=all`)\n      .set('Authorization', `Bearer ${tokenDe(user)}`);\n\n    // Assert — as duas histórias aparecem.\n    expect(resposta.body).toHaveLength(2);\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica que ?include=all traz todas as histórias do projeto, inclusive as que estão em sprints.",
+          "expectedResult": "Responde com as 2 histórias."
+        },
+        {
+          "name": "retorna 403 quando o usuário não é membro do projeto",
+          "status": "passed",
+          "durationMs": 29,
+          "code": "  it('retorna 403 quando o usuário não é membro do projeto', async () => {\n    // Arrange — usuário válido e projeto, mas sem vínculo de membro.\n    const user = criarUsuario({ username: 'caio', email: 'caio@ex.com' });\n    const projeto = criarProjeto({ name: 'Projeto Alheio', ownerId: 999 });\n\n    // Act — tenta listar o backlog de projeto onde não participa.\n    const resposta = await request(app)\n      .get(`/api/projects/${projeto.id}/stories`)\n      .set('Authorization', `Bearer ${tokenDe(user)}`);\n\n    // Assert — bloqueado.\n    expect(resposta.status).toBe(403);\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica o controle de acesso: quem não é membro do projeto não cria nem lista histórias nele.",
+          "expectedResult": "Responde 403 (acesso negado)."
+        },
+        {
+          "name": "retorna 200 e atualiza os campos enviados",
+          "status": "passed",
+          "durationMs": 51,
+          "code": "  it('retorna 200 e atualiza os campos enviados', async () => {\n    // Arrange — história existente no projeto do membro.\n    const { user, projeto } = cenarioMembroComProjeto();\n    const [story] = fakeSupabase.__seed('sp_user_stories', {\n      project_id: projeto.id, title: 'Título antigo',\n    });\n\n    // Act — atualiza título e pontos.\n    const resposta = await request(app)\n      .put(`/api/stories/${story.id}`)\n      .set('Authorization', `Bearer ${tokenDe(user)}`)\n      .send({ title: 'Título novo', story_points: 5 });\n\n    // Assert — campos atualizados.\n    expect(resposta.status).toBe(200);\n    expect(resposta.body).toMatchObject({ title: 'Título novo', story_points: 5 });\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica a atualização parcial da história, mudando título e pontos.",
+          "expectedResult": "Responde 200 com title \"Título novo\" e story_points 5."
+        },
+        {
+          "name": "retorna 400 ao atribuir a história a quem não é membro do projeto",
+          "status": "passed",
+          "durationMs": 26,
+          "code": "  it('retorna 400 ao atribuir a história a quem não é membro do projeto', async () => {\n    // Arrange — história do projeto e um outro usuário que NÃO é membro.\n    const { user, projeto } = cenarioMembroComProjeto();\n    const estranho = criarUsuario({ username: 'estranho', email: 'estranho@ex.com' });\n    const [story] = fakeSupabase.__seed('sp_user_stories', {\n      project_id: projeto.id, title: 'Tarefa',\n    });\n\n    // Act — tenta atribuir ao usuário que não participa do projeto.\n    const resposta = await request(app)\n      .put(`/api/stories/${story.id}`)\n      .set('Authorization', `Bearer ${tokenDe(user)}`)\n      .send({ assignee_id: estranho.id });\n\n    // Assert — recusado.\n    expect(resposta.status).toBe(400);\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica a proteção anti-IDOR: não dá para atribuir a história a quem não é membro do projeto.",
+          "expectedResult": "Responde 400 (atribuição recusada)."
+        },
+        {
+          "name": "retorna 404 quando a história não existe",
+          "status": "passed",
+          "durationMs": 24,
+          "code": "  it('retorna 404 quando a história não existe', async () => {\n    // Arrange — usuário membro, mas nenhuma história com esse id.\n    const { user } = cenarioMembroComProjeto();\n\n    // Act — usa um id inexistente.\n    const resposta = await request(app)\n      .put('/api/stories/9999')\n      .set('Authorization', `Bearer ${tokenDe(user)}`)\n      .send({ title: 'X' });\n\n    // Assert — não encontrada.\n    expect(resposta.status).toBe(404);\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica que atualizar uma história inexistente retorna não encontrado.",
+          "expectedResult": "Responde 404 (história não encontrada)."
+        },
+        {
+          "name": "retorna 403 quando o usuário não é membro do projeto da história",
+          "status": "passed",
+          "durationMs": 20,
+          "code": "  it('retorna 403 quando o usuário não é membro do projeto da história', async () => {\n    // Arrange — usuário válido SEM membership e uma história de outro projeto.\n    const user = criarUsuario({ username: 'duda', email: 'duda@ex.com' });\n    const projetoAlheio = criarProjeto({ name: 'Alheio', ownerId: 999 });\n    const [story] = fakeSupabase.__seed('sp_user_stories', {\n      project_id: projetoAlheio.id, title: 'Não é minha',\n    });\n\n    // Act — tenta atualizar história de projeto alheio.\n    const resposta = await request(app)\n      .put(`/api/stories/${story.id}`)\n      .set('Authorization', `Bearer ${tokenDe(user)}`)\n      .send({ title: 'Invadindo' });\n\n    // Assert — bloqueado.\n    expect(resposta.status).toBe(403);\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica o controle de acesso: a história existe, mas em projeto onde o usuário não é membro.",
+          "expectedResult": "Responde 403 (acesso negado)."
+        },
+        {
+          "name": "retorna 200 e remove a história",
+          "status": "passed",
+          "durationMs": 22,
+          "code": "  it('retorna 200 e remove a história', async () => {\n    // Arrange — história existente no projeto do membro.\n    const { user, projeto } = cenarioMembroComProjeto();\n    const [story] = fakeSupabase.__seed('sp_user_stories', {\n      project_id: projeto.id, title: 'Pra deletar',\n    });\n\n    // Act — deleta a história.\n    const resposta = await request(app)\n      .delete(`/api/stories/${story.id}`)\n      .set('Authorization', `Bearer ${tokenDe(user)}`);\n\n    // Assert — sucesso confirmado.\n    expect(resposta.status).toBe(200);\n    expect(resposta.body).toEqual({ success: true });\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica o caminho feliz de remover uma história.",
+          "expectedResult": "Responde 200 com { success: true }."
+        },
+        {
+          "name": "retorna 200 e associa a história ao sprint do mesmo projeto",
+          "status": "passed",
+          "durationMs": 23,
+          "code": "  it('retorna 200 e associa a história ao sprint do mesmo projeto', async () => {\n    // Arrange — história no backlog e um sprint do mesmo projeto.\n    const { user, projeto } = cenarioMembroComProjeto();\n    const [sprint] = fakeSupabase.__seed('sp_sprints', { project_id: projeto.id, name: 'Sprint 1' });\n    const [story] = fakeSupabase.__seed('sp_user_stories', { project_id: projeto.id, title: 'Mover pra sprint' });\n\n    // Act — move a história pra esse sprint.\n    const resposta = await request(app)\n      .put(`/api/stories/${story.id}/move-to-sprint`)\n      .set('Authorization', `Bearer ${tokenDe(user)}`)\n      .send({ sprint_id: sprint.id });\n\n    // Assert — história passou a apontar para o sprint.\n    expect(resposta.status).toBe(200);\n    expect(resposta.body.sprint_id).toBe(sprint.id);\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica o caminho feliz de mover uma história do backlog para um sprint do mesmo projeto (US5).",
+          "expectedResult": "Responde 200 e a história passa a ter o sprint_id do sprint."
+        },
+        {
+          "name": "retorna 200 e devolve a história ao backlog quando sprint_id é null",
+          "status": "passed",
+          "durationMs": 29,
+          "code": "  it('retorna 200 e devolve a história ao backlog quando sprint_id é null', async () => {\n    // Arrange — história que já está em um sprint.\n    const { user, projeto } = cenarioMembroComProjeto();\n    const [story] = fakeSupabase.__seed('sp_user_stories', {\n      project_id: projeto.id, title: 'Voltar pro backlog', sprint_id: 50,\n    });\n\n    // Act — move de volta pro backlog (sprint_id null).\n    const resposta = await request(app)\n      .put(`/api/stories/${story.id}/move-to-sprint`)\n      .set('Authorization', `Bearer ${tokenDe(user)}`)\n      .send({ sprint_id: null });\n\n    // Assert — sem sprint (de volta ao backlog).\n    expect(resposta.status).toBe(200);\n    expect(resposta.body.sprint_id).toBeNull();\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica que enviar sprint_id null devolve a história ao backlog (US5).",
+          "expectedResult": "Responde 200 e a história fica com sprint_id null."
+        },
+        {
+          "name": "retorna 400 quando sprint_id não está no corpo",
+          "status": "passed",
+          "durationMs": 20,
+          "code": "  it('retorna 400 quando sprint_id não está no corpo', async () => {\n    // Arrange — história válida no projeto do membro.\n    const { user, projeto } = cenarioMembroComProjeto();\n    const [story] = fakeSupabase.__seed('sp_user_stories', { project_id: projeto.id, title: 'X' });\n\n    // Act — envia corpo sem a chave sprint_id.\n    const resposta = await request(app)\n      .put(`/api/stories/${story.id}/move-to-sprint`)\n      .set('Authorization', `Bearer ${tokenDe(user)}`)\n      .send({});\n\n    // Assert — recusado por falta de sprint_id.\n    expect(resposta.status).toBe(400);\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica a validação: o corpo precisa conter a chave sprint_id (mesmo que null).",
+          "expectedResult": "Responde 400 (sprint_id faltando)."
+        },
+        {
+          "name": "retorna 404 quando o sprint de destino não existe",
+          "status": "passed",
+          "durationMs": 17,
+          "code": "  it('retorna 404 quando o sprint de destino não existe', async () => {\n    // Arrange — história válida, mas o sprint alvo não foi criado.\n    const { user, projeto } = cenarioMembroComProjeto();\n    const [story] = fakeSupabase.__seed('sp_user_stories', { project_id: projeto.id, title: 'X' });\n\n    // Act — tenta mover pra um sprint inexistente.\n    const resposta = await request(app)\n      .put(`/api/stories/${story.id}/move-to-sprint`)\n      .set('Authorization', `Bearer ${tokenDe(user)}`)\n      .send({ sprint_id: 9999 });\n\n    // Assert — sprint não encontrado.\n    expect(resposta.status).toBe(404);\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica que mover para um sprint inexistente retorna não encontrado.",
+          "expectedResult": "Responde 404 (sprint não encontrado)."
+        },
+        {
+          "name": "retorna 403 quando o sprint pertence a outro projeto",
+          "status": "passed",
+          "durationMs": 17,
+          "code": "  it('retorna 403 quando o sprint pertence a outro projeto', async () => {\n    // Arrange — história do projeto do membro e um sprint de OUTRO projeto.\n    const { user, projeto } = cenarioMembroComProjeto();\n    const outroProjeto = criarProjeto({ name: 'Outro', ownerId: 999 });\n    const [sprintAlheio] = fakeSupabase.__seed('sp_sprints', { project_id: outroProjeto.id, name: 'Sprint B' });\n    const [story] = fakeSupabase.__seed('sp_user_stories', { project_id: projeto.id, title: 'Minha história' });\n\n    // Act — tenta mover pra um sprint de outro projeto.\n    const resposta = await request(app)\n      .put(`/api/stories/${story.id}/move-to-sprint`)\n      .set('Authorization', `Bearer ${tokenDe(user)}`)\n      .send({ sprint_id: sprintAlheio.id });\n\n    // Assert — bloqueado por inconsistência de projeto.\n    expect(resposta.status).toBe(403);\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica a proteção anti-IDOR: não dá para mover a história para um sprint de outro projeto.",
+          "expectedResult": "Responde 403 (inconsistência de projeto)."
+        },
+        {
+          "name": "retorna as histórias daquele sprint",
+          "status": "passed",
+          "durationMs": 15,
+          "code": "  it('retorna as histórias daquele sprint', async () => {\n    // Arrange — sprint do projeto e duas histórias: uma dentro do sprint, outra no backlog.\n    const { user, projeto } = cenarioMembroComProjeto();\n    const [sprint] = fakeSupabase.__seed('sp_sprints', { project_id: projeto.id, name: 'Sprint 1' });\n    fakeSupabase.__seed('sp_user_stories', { project_id: projeto.id, title: 'Dentro do sprint', sprint_id: sprint.id });\n    fakeSupabase.__seed('sp_user_stories', { project_id: projeto.id, title: 'No backlog' });\n\n    // Act — lista as histórias do sprint.\n    const resposta = await request(app)\n      .get(`/api/sprints/${sprint.id}/stories`)\n      .set('Authorization', `Bearer ${tokenDe(user)}`);\n\n    // Assert — só a história do sprint aparece.\n    expect(resposta.status).toBe(200);\n    expect(resposta.body).toHaveLength(1);\n    expect(resposta.body[0].title).toBe('Dentro do sprint');\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica o caminho feliz: lista só as histórias atribuídas àquele sprint (US5).",
+          "expectedResult": "Responde 200 com 1 história (a \"Dentro do sprint\")."
+        },
+        {
+          "name": "retorna 404 quando o sprint não existe",
+          "status": "passed",
+          "durationMs": 16,
+          "code": "  it('retorna 404 quando o sprint não existe', async () => {\n    // Arrange — usuário membro, sem o sprint alvo.\n    const { user } = cenarioMembroComProjeto();\n\n    // Act — pede board de sprint inexistente.\n    const resposta = await request(app)\n      .get('/api/sprints/9999/board')\n      .set('Authorization', `Bearer ${tokenDe(user)}`);\n\n    // Assert — não encontrado.\n    expect(resposta.status).toBe(404);\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica que listar histórias / board de um sprint inexistente retorna não encontrado.",
+          "expectedResult": "Responde 404 (sprint não encontrado)."
+        },
+        {
+          "name": "retorna 403 ao listar histórias do sprint quando não é membro",
+          "status": "passed",
+          "durationMs": 16,
+          "code": "  it('retorna 403 ao listar histórias do sprint quando não é membro', async () => {\n    // Arrange — sprint de um dono; o intruso não tem membership no projeto.\n    const dono = criarUsuario({ username: 'donoS', email: 'donoS@ex.com' });\n    const intruso = criarUsuario({ username: 'intrusoS', email: 'intrusoS@ex.com' });\n    const projeto = criarProjeto({ name: 'Privado', ownerId: dono.id });\n    const [sprint] = fakeSupabase.__seed('sp_sprints', { project_id: projeto.id, name: 'Sprint 1' });\n\n    // Act — o intruso tenta listar as histórias do sprint.\n    const resposta = await request(app)\n      .get(`/api/sprints/${sprint.id}/stories`)\n      .set('Authorization', `Bearer ${tokenDe(intruso)}`);\n\n    // Assert — acesso negado.\n    expect(resposta.status).toBe(403);\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica o controle de acesso ao listar histórias de um sprint quando não se é membro.",
+          "expectedResult": "Responde 403 (acesso negado)."
+        },
+        {
+          "name": "retorna 200 e muda o status de to_do para in_progress",
+          "status": "passed",
+          "durationMs": 16,
+          "code": "  it('retorna 200 e muda o status de to_do para in_progress', async () => {\n    // Arrange — história nova (status default to_do) no sprint do membro.\n    const { user, projeto } = cenarioMembroComProjeto();\n    const [story] = fakeSupabase.__seed('sp_user_stories', {\n      project_id: projeto.id, title: 'Card do Kanban',\n    });\n\n    // Act — move pra in_progress.\n    const resposta = await request(app)\n      .put(`/api/stories/${story.id}/status`)\n      .set('Authorization', `Bearer ${tokenDe(user)}`)\n      .send({ status: 'in_progress' });\n\n    // Assert — status atualizado.\n    expect(resposta.status).toBe(200);\n    expect(resposta.body.status).toBe('in_progress');\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica a transição de coluna do Kanban (to_do -> in_progress) (US6).",
+          "expectedResult": "Responde 200 e o status da história vira \"in_progress\"."
+        },
+        {
+          "name": "retorna 400 quando o status é inválido",
+          "status": "passed",
+          "durationMs": 20,
+          "code": "  it('retorna 400 quando o status é inválido', async () => {\n    // Arrange — história válida no projeto do membro.\n    const { user, projeto } = cenarioMembroComProjeto();\n    const [story] = fakeSupabase.__seed('sp_user_stories', {\n      project_id: projeto.id, title: 'Card',\n    });\n\n    // Act — tenta um status que não pertence ao conjunto válido.\n    const resposta = await request(app)\n      .put(`/api/stories/${story.id}/status`)\n      .set('Authorization', `Bearer ${tokenDe(user)}`)\n      .send({ status: 'voando' });\n\n    // Assert — recusado.\n    expect(resposta.status).toBe(400);\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica a validação: um status fora das colunas do Kanban é recusado (US6).",
+          "expectedResult": "Responde 400 (status inválido)."
+        },
+        {
+          "name": "retorna as histórias agrupadas por status",
+          "status": "passed",
+          "durationMs": 17,
+          "code": "  it('retorna as histórias agrupadas por status', async () => {\n    // Arrange — sprint do projeto com uma história em to_do e outra em done.\n    const { user, projeto } = cenarioMembroComProjeto();\n    const [sprint] = fakeSupabase.__seed('sp_sprints', { project_id: projeto.id, name: 'Sprint 1' });\n    fakeSupabase.__seed('sp_user_stories', {\n      project_id: projeto.id, title: 'A fazer', sprint_id: sprint.id, status: 'to_do',\n    });\n    fakeSupabase.__seed('sp_user_stories', {\n      project_id: projeto.id, title: 'Feita', sprint_id: sprint.id, status: 'done',\n    });\n\n    // Act — pede o board do sprint.\n    const resposta = await request(app)\n      .get(`/api/sprints/${sprint.id}/board`)\n      .set('Authorization', `Bearer ${tokenDe(user)}`);\n\n    // Assert — cada coluna tem a quantidade certa de cards.\n    expect(resposta.status).toBe(200);\n    expect(resposta.body.to_do).toHaveLength(1);\n    expect(resposta.body.done).toHaveLength(1);\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica que o board devolve as histórias agrupadas pelas 4 colunas do Kanban (US6).",
+          "expectedResult": "Responde 200 com 1 card em to_do e 1 em done."
+        },
+        {
+          "name": "inclui o assignee_username do responsável em cada card",
+          "status": "passed",
+          "durationMs": 19,
+          "code": "  it('inclui o assignee_username do responsável em cada card', async () => {\n    // Arrange — sprint + história atribuída a um usuário que também é membro.\n    const { user, projeto } = cenarioMembroComProjeto();\n    const [sprint] = fakeSupabase.__seed('sp_sprints', { project_id: projeto.id, name: 'Sprint 1' });\n    fakeSupabase.__seed('sp_user_stories', {\n      project_id: projeto.id, title: 'Com dono', sprint_id: sprint.id, status: 'to_do', assignee_id: user.id,\n    });\n\n    // Act — pede o board.\n    const resposta = await request(app)\n      .get(`/api/sprints/${sprint.id}/board`)\n      .set('Authorization', `Bearer ${tokenDe(user)}`);\n\n    // Assert — o card traz o username do responsável.\n    expect(resposta.body.to_do[0].assignee_username).toBe('ana');\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica que cada card do board carrega o assignee_username do responsável.",
+          "expectedResult": "O card em to_do traz assignee_username \"ana\"."
+        },
+        {
+          "name": "retorna 404 quando o sprint não existe",
+          "status": "passed",
+          "durationMs": 17,
+          "code": "  it('retorna 404 quando o sprint não existe', async () => {\n    // Arrange — usuário membro, sem o sprint alvo.\n    const { user } = cenarioMembroComProjeto();\n\n    // Act — pede board de sprint inexistente.\n    const resposta = await request(app)\n      .get('/api/sprints/9999/board')\n      .set('Authorization', `Bearer ${tokenDe(user)}`);\n\n    // Assert — não encontrado.\n    expect(resposta.status).toBe(404);\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica que listar histórias / board de um sprint inexistente retorna não encontrado.",
+          "expectedResult": "Responde 404 (sprint não encontrado)."
+        },
+        {
+          "name": "retorna 403 ao ver o board do sprint quando não é membro",
+          "status": "passed",
+          "durationMs": 10,
+          "code": "  it('retorna 403 ao ver o board do sprint quando não é membro', async () => {\n    // Arrange — sprint de um dono; o intruso não tem membership no projeto.\n    const dono = criarUsuario({ username: 'donoB', email: 'donoB@ex.com' });\n    const intruso = criarUsuario({ username: 'intrusoB', email: 'intrusoB@ex.com' });\n    const projeto = criarProjeto({ name: 'Privado 2', ownerId: dono.id });\n    const [sprint] = fakeSupabase.__seed('sp_sprints', { project_id: projeto.id, name: 'Sprint 1' });\n\n    // Act — o intruso tenta ver o board do sprint.\n    const resposta = await request(app)\n      .get(`/api/sprints/${sprint.id}/board`)\n      .set('Authorization', `Bearer ${tokenDe(intruso)}`);\n\n    // Assert — acesso negado.\n    expect(resposta.status).toBe(403);\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica o controle de acesso ao ver o board de um sprint quando não se é membro.",
+          "expectedResult": "Responde 403 (acesso negado)."
+        }
+      ]
+    },
+    {
+      "name": "Rotas de IA (Gemini mockado)",
+      "file": "tests/ai.test.js",
+      "tests": [
+        {
+          "name": "retorna 400 quando falta a description",
+          "status": "passed",
+          "durationMs": 146,
+          "code": "    it('retorna 400 quando falta a description', async () => {\n      // Arrange — usuário válido (o middleware exige user existente) e token.\n      const usuario = criarUsuario({ username: 'ana', email: 'ana@x.com' });\n\n      // Act — chama a rota SEM o campo description no corpo.\n      const resposta = await request(app)\n        .post('/api/ai/generate-stories')\n        .set('Authorization', `Bearer ${tokenDe(usuario)}`)\n        .send({});\n\n      // Assert — recusa com 400.\n      expect(resposta.status).toBe(400);\n    });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica a validação de entrada: gerar histórias sem a description é recusado antes de chamar a IA (US8).",
+          "expectedResult": "Responde 400 (description obrigatória)."
+        },
+        {
+          "name": "retorna 403 quando informa projectId de projeto onde nao e membro",
+          "status": "passed",
+          "durationMs": 38,
+          "code": "    it('retorna 403 quando informa projectId de projeto onde nao e membro', async () => {\n      // Arrange — usuário existe, projeto existe, mas SEM criar membership.\n      const usuario = criarUsuario({ username: 'bia', email: 'bia@x.com' });\n      const projeto = criarProjeto({ name: 'Loja', ownerId: 999 });\n\n      // Act — pede histórias passando o projectId do projeto alheio.\n      const resposta = await request(app)\n        .post('/api/ai/generate-stories')\n        .set('Authorization', `Bearer ${tokenDe(usuario)}`)\n        .send({ description: 'um app de loja', projectId: projeto.id });\n\n      // Assert — bloqueia com 403.\n      expect(resposta.status).toBe(403);\n    });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica o controle de acesso: gerar histórias com projectId de projeto alheio é bloqueado.",
+          "expectedResult": "Responde 403 (não é membro do projeto)."
+        },
+        {
+          "name": "retorna 200 com as historias parseadas do JSON da IA",
+          "status": "passed",
+          "durationMs": 37,
+          "code": "    it('retorna 200 com as historias parseadas do JSON da IA', async () => {\n      // Arrange — usuário válido e o mock do fetch devolvendo histórias em JSON.\n      const usuario = criarUsuario({ username: 'caio', email: 'caio@x.com' });\n      const jsonDaIa = '{\"stories\":[{\"title\":\"Como usuário, quero logar para acessar\",\"story_points\":3,\"label\":\"feature\"}]}';\n      global.fetch.mockResolvedValue(respostaGeminiOk(jsonDaIa));\n\n      // Act — pede histórias só com a description (sem projectId, então não checa membership).\n      const resposta = await request(app)\n        .post('/api/ai/generate-stories')\n        .set('Authorization', `Bearer ${tokenDe(usuario)}`)\n        .send({ description: 'um app com login' });\n\n      // Assert — 200 e as histórias vieram exatamente como o mock devolveu.\n      expect(resposta.status).toBe(200);\n      expect(resposta.body.stories).toEqual([\n        { title: 'Como usuário, quero logar para acessar', story_points: 3, label: 'feature' },\n      ]);\n    });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica o caminho feliz: o Gemini (mockado) devolve JSON e a rota repassa as histórias parseadas (US8).",
+          "expectedResult": "Responde 200 com stories iguais às do JSON do mock."
+        },
+        {
+          "name": "retorna 500 quando a IA responde um texto que nao e JSON valido",
+          "status": "passed",
+          "durationMs": 27,
+          "code": "    it('retorna 500 quando a IA responde um texto que nao e JSON valido', async () => {\n      // Arrange — o mock devolve texto qualquer (impossível de parsear como JSON).\n      const usuario = criarUsuario({ username: 'edu', email: 'edu@x.com' });\n      global.fetch.mockResolvedValue(respostaGeminiOk('desculpe, não entendi o pedido'));\n\n      // Act — pede histórias.\n      const resposta = await request(app)\n        .post('/api/ai/generate-stories')\n        .set('Authorization', `Bearer ${tokenDe(usuario)}`)\n        .send({ description: 'algo' });\n\n      // Assert — erro de parsing vira 500.\n      expect(resposta.status).toBe(500);\n    });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica o tratamento de erro de parsing quando a IA responde texto não-JSON.",
+          "expectedResult": "Responde 500 (erro de parsing)."
+        },
+        {
+          "name": "retorna 500 quando o Gemini responde com status nao-OK",
+          "status": "passed",
+          "durationMs": 27,
+          "code": "    it('retorna 500 quando o Gemini responde com status nao-OK', async () => {\n      // Arrange — chave presente, mas o fetch devolve ok=false (status 429).\n      const usuario = criarUsuario({ username: 'fab', email: 'fab@x.com' });\n      global.fetch.mockResolvedValue({ ok: false, status: 429, text: async () => 'cota excedida' });\n\n      // Act — pede histórias (passa pelo wrapper callGemini).\n      const resposta = await request(app)\n        .post('/api/ai/generate-stories')\n        .set('Authorization', `Bearer ${tokenDe(usuario)}`)\n        .send({ description: 'um app' });\n\n      // Assert — erro do Gemini vira 500.\n      expect(resposta.status).toBe(500);\n    });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica o wrapper callGemini: status não-OK do Gemini (ex.: 429) faz a rota responder erro.",
+          "expectedResult": "Responde 500 (erro do Gemini)."
+        },
+        {
+          "name": "retorna 400 quando falta projectDescription",
+          "status": "passed",
+          "durationMs": 27,
+          "code": "    it('retorna 400 quando falta projectDescription', async () => {\n      // Arrange — usuário válido e token.\n      const usuario = criarUsuario({ username: 'ona', email: 'ona@x.com' });\n\n      // Act — chama a rota sem projectDescription.\n      const resposta = await request(app)\n        .post('/api/ai/project-onboarding')\n        .set('Authorization', `Bearer ${tokenDe(usuario)}`)\n        .send({ projectName: 'Loja' });\n\n      // Assert — recusa com 400.\n      expect(resposta.status).toBe(400);\n    });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica a validação de entrada do onboarding: sem projectDescription é recusado.",
+          "expectedResult": "Responde 400 (projectDescription obrigatória)."
+        },
+        {
+          "name": "retorna done=false com a pergunta quando ha poucos turnos",
+          "status": "passed",
+          "durationMs": 28,
+          "code": "    it('retorna done=false com a pergunta quando ha poucos turnos', async () => {\n      // Arrange — usuário válido; a \"IA\" devolve uma pergunta em texto natural.\n      const usuario = criarUsuario({ username: 'pia', email: 'pia@x.com' });\n      global.fetch.mockResolvedValue(respostaGeminiOk('Qual o tipo de usuário do app?'));\n\n      // Act — começa a conversa (0 turnos do usuário).\n      const resposta = await request(app)\n        .post('/api/ai/project-onboarding')\n        .set('Authorization', `Bearer ${tokenDe(usuario)}`)\n        .send({ projectName: 'Loja', projectDescription: 'um app de loja' });\n\n      // Assert — 200, ainda não terminou e veio a pergunta da IA.\n      expect(resposta.status).toBe(200);\n      expect(resposta.body).toEqual({ done: false, message: 'Qual o tipo de usuário do app?' });\n    });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica o caminho \"ainda perguntando\": com poucos turnos, a IA devolve uma pergunta.",
+          "expectedResult": "Responde 200 com { done: false, message: pergunta da IA }."
+        },
+        {
+          "name": "retorna done=true com as historias apos 3 turnos do usuario",
+          "status": "passed",
+          "durationMs": 27,
+          "code": "    it('retorna done=true com as historias apos 3 turnos do usuario', async () => {\n      // Arrange — 3 turnos do usuário e a IA devolve JSON com histórias.\n      const usuario = criarUsuario({ username: 'qia', email: 'qia@x.com' });\n      const jsonDaIa = '{\"stories\":[{\"title\":\"Como cliente, quero comprar para receber em casa\",\"story_points\":5,\"label\":\"feature\"}]}';\n      global.fetch.mockResolvedValue(respostaGeminiOk(jsonDaIa));\n      const messages = [\n        { role: 'user', content: 'quero um app de loja' },\n        { role: 'user', content: 'para clientes finais' },\n        { role: 'user', content: 'com pagamento por pix' },\n      ];\n\n      // Act — manda a conversa já com 3 turnos do usuário.\n      const resposta = await request(app)\n        .post('/api/ai/project-onboarding')\n        .set('Authorization', `Bearer ${tokenDe(usuario)}`)\n        .send({ projectName: 'Loja', projectDescription: 'um app de loja', messages });\n\n      // Assert — 200, terminou e veio a lista de histórias parseada.\n      expect(resposta.status).toBe(200);\n      expect(resposta.body).toEqual({\n        done: true,\n        stories: [{ title: 'Como cliente, quero comprar para receber em casa', story_points: 5, label: 'feature' }],\n      });\n    });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica o caminho \"gerar histórias\": após 3+ turnos a IA devolve JSON e a rota conclui o onboarding.",
+          "expectedResult": "Responde 200 com { done: true, stories: [...] }."
+        },
+        {
+          "name": "cai no fallback done=false quando a IA nao devolve JSON na fase de gerar",
+          "status": "passed",
+          "durationMs": 22,
+          "code": "    it('cai no fallback done=false quando a IA nao devolve JSON na fase de gerar', async () => {\n      // Arrange — 3 turnos do usuário, mas a IA responde texto livre (não-JSON).\n      const usuario = criarUsuario({ username: 'ria', email: 'ria@x.com' });\n      global.fetch.mockResolvedValue(respostaGeminiOk('ainda preciso de mais detalhes'));\n      const messages = [\n        { role: 'user', content: 'um' },\n        { role: 'user', content: 'dois' },\n        { role: 'user', content: 'tres' },\n      ];\n\n      // Act — pede o onboarding com a conversa de 3 turnos.\n      const resposta = await request(app)\n        .post('/api/ai/project-onboarding')\n        .set('Authorization', `Bearer ${tokenDe(usuario)}`)\n        .send({ projectDescription: 'algo', messages });\n\n      // Assert — não terminou e devolveu o texto como mensagem (fallback).\n      expect(resposta.status).toBe(200);\n      expect(resposta.body).toEqual({ done: false, message: 'ainda preciso de mais detalhes' });\n    });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica o fallback: mesmo na fase de gerar, se a IA não devolve JSON, o onboarding não conclui.",
+          "expectedResult": "Responde 200 com { done: false, message: texto da IA }."
+        },
+        {
+          "name": "retorna 500 quando a chamada ao Gemini falha",
+          "status": "passed",
+          "durationMs": 27,
+          "code": "    it('retorna 500 quando a chamada ao Gemini falha', async () => {\n      // Arrange — usuário válido e o fetch simula falha de rede.\n      const usuario = criarUsuario({ username: 'sia', email: 'sia@x.com' });\n      global.fetch.mockRejectedValue(new Error('falha de rede'));\n\n      // Act — pede o onboarding.\n      const resposta = await request(app)\n        .post('/api/ai/project-onboarding')\n        .set('Authorization', `Bearer ${tokenDe(usuario)}`)\n        .send({ projectDescription: 'um app' });\n\n      // Assert — falha na IA vira 500.\n      expect(resposta.status).toBe(500);\n    });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica o tratamento de erro do onboarding quando a chamada ao Gemini falha (rede).",
+          "expectedResult": "Responde 500 (falha na IA)."
+        },
+        {
+          "name": "retorna 400 quando falta o sprintId",
+          "status": "passed",
+          "durationMs": 25,
+          "code": "    it('retorna 400 quando falta o sprintId', async () => {\n      // Arrange — usuário válido e token.\n      const usuario = criarUsuario({ username: 'gui', email: 'gui@x.com' });\n\n      // Act — chama a rota sem o sprintId no corpo.\n      const resposta = await request(app)\n        .post('/api/ai/sprint-summary')\n        .set('Authorization', `Bearer ${tokenDe(usuario)}`)\n        .send({});\n\n      // Assert — recusa com 400.\n      expect(resposta.status).toBe(400);\n    });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica a validação de entrada do resumo de sprint: sem sprintId é recusado (US9).",
+          "expectedResult": "Responde 400 (sprintId obrigatório)."
+        },
+        {
+          "name": "retorna 404 quando o sprint nao existe",
+          "status": "passed",
+          "durationMs": 25,
+          "code": "    it('retorna 404 quando o sprint nao existe', async () => {\n      // Arrange — usuário existe, mas nenhum sprint foi semeado.\n      const usuario = criarUsuario({ username: 'ian', email: 'ian@x.com' });\n\n      // Act — pede resumo de um sprint inexistente.\n      const resposta = await request(app)\n        .post('/api/ai/sprint-summary')\n        .set('Authorization', `Bearer ${tokenDe(usuario)}`)\n        .send({ sprintId: 12345 });\n\n      // Assert — sprint não encontrado vira 404.\n      expect(resposta.status).toBe(404);\n    });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica que pedir o resumo de um sprint inexistente retorna não encontrado.",
+          "expectedResult": "Responde 404 (sprint não encontrado)."
+        },
+        {
+          "name": "retorna 403 quando o usuario nao e membro do projeto do sprint",
+          "status": "passed",
+          "durationMs": 28,
+          "code": "    it('retorna 403 quando o usuario nao e membro do projeto do sprint', async () => {\n      // Arrange — projeto e sprint existem, mas o usuário NÃO é membro do projeto.\n      const usuario = criarUsuario({ username: 'jul', email: 'jul@x.com' });\n      const projeto = criarProjeto({ name: 'Alheio', ownerId: 999 });\n      const [sprint] = fakeSupabase.__seed('sp_sprints', { project_id: projeto.id, name: 'Sprint 1' });\n\n      // Act — pede resumo do sprint do projeto alheio.\n      const resposta = await request(app)\n        .post('/api/ai/sprint-summary')\n        .set('Authorization', `Bearer ${tokenDe(usuario)}`)\n        .send({ sprintId: sprint.id });\n\n      // Assert — não-membro vira 403.\n      expect(resposta.status).toBe(403);\n    });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica o controle de acesso: pedir resumo de sprint de projeto alheio é bloqueado.",
+          "expectedResult": "Responde 403 (não é membro do projeto)."
+        },
+        {
+          "name": "retorna 200 com summary da IA e metrics calculadas das historias",
+          "status": "passed",
+          "durationMs": 22,
+          "code": "    it('retorna 200 com summary da IA e metrics calculadas das historias', async () => {\n      // Arrange — usuário membro, projeto, sprint e duas histórias (uma \"done\").\n      const usuario = criarUsuario({ username: 'lia', email: 'lia@x.com' });\n      const projeto = criarProjeto({ name: 'Projeto X', ownerId: usuario.id });\n      criarMembro({ projectId: projeto.id, userId: usuario.id });\n      const [sprint] = fakeSupabase.__seed('sp_sprints', { project_id: projeto.id, name: 'Sprint 1', goal: 'entregar login' });\n      fakeSupabase.__seed('sp_user_stories', [\n        { project_id: projeto.id, sprint_id: sprint.id, title: 'História A', status: 'done', story_points: 5 },\n        { project_id: projeto.id, sprint_id: sprint.id, title: 'História B', status: 'in_progress', story_points: 3 },\n      ]);\n      global.fetch.mockResolvedValue(respostaGeminiOk('Resumo do sprint: foi bem.'));\n\n      // Act — pede o resumo do sprint.\n      const resposta = await request(app)\n        .post('/api/ai/sprint-summary')\n        .set('Authorization', `Bearer ${tokenDe(usuario)}`)\n        .send({ sprintId: sprint.id });\n\n      // Assert — 200, com o texto da IA e as métricas certas (8 planejados, 5 feitos, 1 em andamento).\n      expect(resposta.status).toBe(200);\n      expect(resposta.body).toMatchObject({\n        summary: 'Resumo do sprint: foi bem.',\n        metrics: { totalPoints: 8, donePoints: 5, storiesCount: 2, inProgressCount: 1, inReviewCount: 0 },\n      });\n    });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica o caminho feliz do resumo de sprint: a IA gera o texto e a rota calcula as métricas (US9).",
+          "expectedResult": "Responde 200 com summary da IA e metrics {totalPoints:8, donePoints:5, storiesCount:2, inProgressCount:1, inReviewCount:0}."
+        },
+        {
+          "name": "retorna 200 com mensagem padrao e sem chamar a IA quando o sprint nao tem historias",
+          "status": "passed",
+          "durationMs": 18,
+          "code": "    it('retorna 200 com mensagem padrao e sem chamar a IA quando o sprint nao tem historias', async () => {\n      // Arrange — sprint do projeto do usuário (que é membro), mas sem histórias.\n      const usuario = criarUsuario({ username: 'meg', email: 'meg@x.com' });\n      const projeto = criarProjeto({ name: 'Projeto Y', ownerId: usuario.id });\n      criarMembro({ projectId: projeto.id, userId: usuario.id });\n      const [sprint] = fakeSupabase.__seed('sp_sprints', { project_id: projeto.id, name: 'Sprint vazio' });\n\n      // Act — pede o resumo de um sprint sem histórias.\n      const resposta = await request(app)\n        .post('/api/ai/sprint-summary')\n        .set('Authorization', `Bearer ${tokenDe(usuario)}`)\n        .send({ sprintId: sprint.id });\n\n      // Assert — 200 com a mensagem padrão e o fetch (IA) nunca foi chamado.\n      expect(resposta.status).toBe(200);\n      expect(global.fetch).not.toHaveBeenCalled();\n    });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica a economia de crédito: sprint sem histórias responde mensagem padrão sem chamar a IA.",
+          "expectedResult": "Responde 200 e o fetch (IA) nunca é chamado."
+        },
+        {
+          "name": "retorna 500 quando a chamada ao Gemini falha no resumo",
+          "status": "passed",
+          "durationMs": 24,
+          "code": "    it('retorna 500 quando a chamada ao Gemini falha no resumo', async () => {\n      // Arrange — usuário membro, sprint com 1 história, mas o fetch rejeita.\n      const usuario = criarUsuario({ username: 'noa', email: 'noa@x.com' });\n      const projeto = criarProjeto({ name: 'Projeto Z', ownerId: usuario.id });\n      criarMembro({ projectId: projeto.id, userId: usuario.id });\n      const [sprint] = fakeSupabase.__seed('sp_sprints', { project_id: projeto.id, name: 'Sprint 1' });\n      fakeSupabase.__seed('sp_user_stories', { project_id: projeto.id, sprint_id: sprint.id, title: 'História', status: 'to_do', story_points: 2 });\n      global.fetch.mockRejectedValue(new Error('falha de rede'));\n\n      // Act — pede o resumo do sprint.\n      const resposta = await request(app)\n        .post('/api/ai/sprint-summary')\n        .set('Authorization', `Bearer ${tokenDe(usuario)}`)\n        .send({ sprintId: sprint.id });\n\n      // Assert — falha na IA vira 500.\n      expect(resposta.status).toBe(500);\n    });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica o tratamento de erro do resumo quando, havendo histórias, a chamada ao Gemini falha.",
+          "expectedResult": "Responde 500 (falha na IA)."
+        }
+      ]
+    },
+    {
+      "name": "POST /api/auth/register",
+      "file": "tests/auth.test.js",
+      "tests": [
+        {
+          "name": "retorna 201 com token e usuário quando os dados são válidos",
+          "status": "passed",
+          "durationMs": 393,
+          "code": "  it('retorna 201 com token e usuário quando os dados são válidos', async () => {\n    // Arrange — banco vazio (o setup.js já limpou); preparo o corpo do registro.\n    const corpo = { username: 'rafael', email: 'rafael@teste.com', password: 'senha123' };\n\n    // Act — chama a rota de registro.\n    const resposta = await request(app).post('/api/auth/register').send(corpo);\n\n    // Assert — status 201 e o corpo traz token + dados do usuário criado.\n    expect(resposta.status).toBe(201);\n    expect(resposta.body).toMatchObject({\n      token: expect.any(String),\n      user: { id: expect.any(Number), username: 'rafael', email: 'rafael@teste.com' },\n    });\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica o caminho feliz do registro: com dados válidos cria a conta e devolve um token (US1).",
+          "expectedResult": "Responde 201 com token (string) e o usuário criado (id, username, email)."
+        },
+        {
+          "name": "retorna 400 quando falta um campo obrigatório",
+          "status": "passed",
+          "durationMs": 22,
+          "code": "  it('retorna 400 quando falta um campo obrigatório', async () => {\n    // Arrange — corpo sem o campo password.\n    const corpoIncompleto = { username: 'joao', email: 'joao@teste.com' };\n\n    // Act — tenta registrar sem a senha.\n    const resposta = await request(app).post('/api/auth/register').send(corpoIncompleto);\n\n    // Assert — pedido rejeitado com 400.\n    expect(resposta.status).toBe(400);\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica a validação do registro: faltando um campo obrigatório (ex.: senha), é recusado.",
+          "expectedResult": "Responde 400 (campo obrigatório faltando)."
+        },
+        {
+          "name": "retorna 409 quando o email já existe",
+          "status": "passed",
+          "durationMs": 231,
+          "code": "  it('retorna 409 quando o email já existe', async () => {\n    // Arrange — já existe um usuário com este email no banco.\n    criarUsuario({ username: 'existente', email: 'duplo@teste.com' });\n\n    // Act — tenta registrar OUTRO usuário com o mesmo email.\n    const resposta = await request(app).post('/api/auth/register').send({\n      username: 'novo', email: 'duplo@teste.com', password: 'senha123',\n    });\n\n    // Assert — bloqueado com 409 (conflito de email).\n    expect(resposta.status).toBe(409);\n  });",
+          "explanation": "",
+          "pinned": true,
+          "whatItTests": "Verifica a regra de unicidade do registro: não dá para cadastrar dois usuários com o mesmo e-mail (UNIQUE 23505).",
+          "expectedResult": "Responde 409 (conflito de e-mail duplicado)."
+        },
+        {
+          "name": "retorna 409 quando o username já existe",
+          "status": "passed",
+          "durationMs": 191,
+          "code": "  it('retorna 409 quando o username já existe', async () => {\n    // Arrange — já existe um usuário com este username no banco.\n    criarUsuario({ username: 'duplicado', email: 'um@teste.com' });\n\n    // Act — tenta registrar OUTRO usuário reaproveitando o username.\n    const resposta = await request(app).post('/api/auth/register').send({\n      username: 'duplicado', email: 'dois@teste.com', password: 'senha123',\n    });\n\n    // Assert — bloqueado com 409 (conflito de username).\n    expect(resposta.status).toBe(409);\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica a regra de unicidade do registro: o username também é único (UNIQUE 23505).",
+          "expectedResult": "Responde 409 (conflito de username duplicado)."
+        },
+        {
+          "name": "retorna 200 com token quando email e senha estão corretos",
+          "status": "passed",
+          "durationMs": 213,
+          "code": "  it('retorna 200 com token quando email e senha estão corretos', async () => {\n    // Arrange — semeia um usuário cuja senha gravada é o hash bcrypt de 'senha123'.\n    criarUsuario({\n      username: 'rafael',\n      email: 'rafael@teste.com',\n      password: bcrypt.hashSync('senha123', 10),\n    });\n\n    // Act — faz login com a senha em texto puro correta.\n    const resposta = await request(app).post('/api/auth/login').send({\n      email: 'rafael@teste.com', password: 'senha123',\n    });\n\n    // Assert — status 200 e um token é retornado.\n    expect(resposta.status).toBe(200);\n    expect(resposta.body.token).toEqual(expect.any(String));\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica o caminho feliz do login: e-mail e senha corretos devolvem um token (US1).",
+          "expectedResult": "Responde 200 com um token (string)."
+        },
+        {
+          "name": "retorna 400 quando falta email ou senha",
+          "status": "passed",
+          "durationMs": 4,
+          "code": "  it('retorna 400 quando falta email ou senha', async () => {\n    // Arrange — corpo só com o email, sem a senha.\n    const corpoIncompleto = { email: 'rafael@teste.com' };\n\n    // Act — tenta logar sem a senha.\n    const resposta = await request(app).post('/api/auth/login').send(corpoIncompleto);\n\n    // Assert — pedido rejeitado com 400.\n    expect(resposta.status).toBe(400);\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica a validação do login: faltando e-mail ou senha, é recusado.",
+          "expectedResult": "Responde 400 (campos obrigatórios faltando)."
+        },
+        {
+          "name": "retorna 401 quando a senha está errada",
+          "status": "passed",
+          "durationMs": 176,
+          "code": "  it('retorna 401 quando a senha está errada', async () => {\n    // Arrange — usuário existe, com a senha correta sendo 'senha123'.\n    criarUsuario({\n      username: 'rafael',\n      email: 'rafael@teste.com',\n      password: bcrypt.hashSync('senha123', 10),\n    });\n\n    // Act — tenta logar com uma senha diferente da cadastrada.\n    const resposta = await request(app).post('/api/auth/login').send({\n      email: 'rafael@teste.com', password: 'senha-errada',\n    });\n\n    // Assert — recusado com 401 (credenciais inválidas).\n    expect(resposta.status).toBe(401);\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica a segurança do login: senha errada para um usuário existente não autoriza.",
+          "expectedResult": "Responde 401 (credenciais inválidas)."
+        },
+        {
+          "name": "retorna 401 quando o usuário não existe",
+          "status": "passed",
+          "durationMs": 5,
+          "code": "  it('retorna 401 quando o usuário não existe', async () => {\n    // Arrange — banco vazio: ninguém com este email foi cadastrado.\n\n    // Act — tenta logar com um email inexistente.\n    const resposta = await request(app).post('/api/auth/login').send({\n      email: 'ninguem@teste.com', password: 'qualquer',\n    });\n\n    // Assert — recusado com 401 (credenciais inválidas).\n    expect(resposta.status).toBe(401);\n  });",
+          "explanation": "",
+          "pinned": false,
+          "whatItTests": "Verifica a segurança do login: e-mail que não existe também não autoriza (lado !user do OR).",
+          "expectedResult": "Responde 401 (credenciais inválidas)."
+        }
+      ]
+    }
+  ],
+  "e2e": [
+    {
+      "name": "US1 — Registro e Login",
+      "status": "passed",
+      "durationMs": 8000,
+      "video": "videos/01-registro-login.cy.js.mp4",
+      "steps": [
+        "Abre o app na tela de Login (cy.visit('/'))",
+        "Caminho feliz (registro): clica em 'Criar conta', preenche usuário/email/senha únicos (carimbo de tempo) e clica em 'Criar Conta'; confirma que cai em 'Meus Projetos' (o registro já loga)",
+        "Caminho feliz (login): registra uma conta nova, clica em 'Sair' pra voltar ao Login, digita email + senha corretos e clica em 'Entrar'; confirma que 'Meus Projetos' aparece de novo",
+        "Caminho triste (senha errada): registra e sai, tenta entrar com senha incorreta; confirma que o backend recusa (401), o botão 'Entrar' continua visível e 'Meus Projetos' NÃO aparece"
+      ],
+      "code": "describe('US1 - Registro e Login', () => {\n  it('registra uma conta nova e cai na tela de projetos', () => {\n    const carimbo = Date.now()\n    const usuario = { username: `joao_${carimbo}`, email: `joao_${carimbo}@teste.com`, password: 'senha123' }\n    cy.visit('/')\n    cy.contains('button', 'Criar conta').click()\n    cy.get('input[placeholder=\"Nome de usuário\"]').type(usuario.username)\n    cy.get('input[placeholder=\"Email\"]').type(usuario.email)\n    cy.get('input[placeholder=\"Senha\"]').type(usuario.password)\n    cy.contains('button', 'Criar Conta').click()\n    cy.contains('Meus Projetos').should('be.visible')\n  })\n\n  it('faz login com uma conta que acabou de ser criada', () => {\n    const carimbo = Date.now()\n    const usuario = { username: `maria_${carimbo}`, email: `maria_${carimbo}@teste.com`, password: 'senha123' }\n    cy.registrar(usuario)\n    cy.contains('Meus Projetos').should('be.visible')\n    cy.contains('button', 'Sair').click()\n    cy.get('input[placeholder=\"Email\"]').type(usuario.email)\n    cy.get('input[placeholder=\"Senha\"]').type(usuario.password)\n    cy.contains('button', 'Entrar').click()\n    cy.contains('Meus Projetos').should('be.visible')\n  })\n\n  it('nao deixa entrar quando a senha esta errada', () => {\n    const carimbo = Date.now()\n    const usuario = { username: `ana_${carimbo}`, email: `ana_${carimbo}@teste.com`, password: 'senha123' }\n    cy.registrar(usuario)\n    cy.contains('button', 'Sair').click()\n    cy.get('input[placeholder=\"Email\"]').type(usuario.email)\n    cy.get('input[placeholder=\"Senha\"]').type('senha-errada')\n    cy.contains('button', 'Entrar').click()\n    cy.contains('button', 'Entrar').should('be.visible')\n    cy.contains('Meus Projetos').should('not.exist')\n  })\n})\n\n// helper cy.registrar: abre '/', clica 'Criar conta', preenche os 3 campos e clica 'Criar Conta'",
+      "whatItTests": "Valida o fluxo completo de autenticação pela UI: registro de conta nova (que já loga), login posterior com as credenciais criadas, e a rejeição de login com senha errada.",
+      "expectedResult": "Registro e login corretos levam o usuário à tela 'Meus Projetos'; com senha errada o backend retorna 401, o usuário permanece na tela de Login e nunca alcança 'Meus Projetos'."
+    },
+    {
+      "name": "US2 — Criar projeto",
+      "status": "passed",
+      "durationMs": 8000,
+      "video": "videos/02-criar-projeto.cy.js.mp4",
+      "steps": [
+        "Pré-condição (beforeEach): registra e loga um usuário novo (carimbo de tempo) e confirma 'Meus Projetos'",
+        "Caminho feliz: clica em '+ Novo Projeto', preenche nome ('Loja do Ze') e descrição, clica em 'Criar sem IA' (offline/determinístico, sem chamar o Gemini)",
+        "Confirma que volta para 'Meus Projetos' e que o card do projeto recém-criado está visível",
+        "Regra de negócio (papel PO): cria outro projeto ('App de Tarefas') sem IA e confirma que o card exibe a etiqueta de papel 'PO' (quem cria vira Product Owner)"
+      ],
+      "code": "describe('US2 - Criar projeto', () => {\n  beforeEach(() => {\n    const carimbo = Date.now()\n    cy.registrar({ username: `dono_${carimbo}`, email: `dono_${carimbo}@teste.com`, password: 'senha123' })\n    cy.contains('Meus Projetos').should('be.visible')\n  })\n\n  it('cria um projeto e ele aparece na lista de projetos', () => {\n    cy.contains('button', '+ Novo Projeto').click()\n    cy.contains('Novo Projeto').should('be.visible')\n    cy.get('input[placeholder=\"Ex: Loja Online\"]').type('Loja do Ze')\n    cy.get('textarea[placeholder=\"Ex: E-commerce de roupas com pagamento online\"]').type('E-commerce de camisetas')\n    cy.contains('button', 'Criar sem IA').click()\n    cy.contains('Meus Projetos').should('be.visible')\n    cy.contains('Loja do Ze').should('be.visible')\n  })\n\n  it('mostra o papel \"PO\" no projeto criado (quem cria vira Product Owner)', () => {\n    cy.contains('button', '+ Novo Projeto').click()\n    cy.get('input[placeholder=\"Ex: Loja Online\"]').type('App de Tarefas')\n    cy.get('textarea[placeholder=\"Ex: E-commerce de roupas com pagamento online\"]').type('Gerenciador de tarefas simples')\n    cy.contains('button', 'Criar sem IA').click()\n    cy.contains('App de Tarefas').should('be.visible')\n    cy.contains('PO').should('be.visible')\n  })\n})",
+      "whatItTests": "Valida que um usuário logado cria um projeto pela UI (via 'Criar sem IA', sem dependência de rede/Gemini) e que o criador é registrado como Product Owner (PO).",
+      "expectedResult": "O projeto criado aparece como card na lista 'Meus Projetos' e o card exibe a etiqueta de papel 'PO' para quem o criou."
+    },
+    {
+      "name": "US3/US5/US6 — Backlog e Kanban",
+      "status": "passed",
+      "durationMs": 7000,
+      "video": "videos/03-backlog-kanban.cy.js.mp4",
+      "steps": [
+        "Pré-condição (beforeEach): registra/loga usuário novo, cria projeto 'Projeto Kanban' sem IA, abre o projeto e confirma 'Backlog do Produto'",
+        "US3 (criar história): clica em '+ Nova História', digita o título 'Tela de login', clica em 'Criar' e confirma a história listada no backlog",
+        "US5 (planejar sprint): vai na tab 'Sprints', cria 'Sprint 1' e confirma na lista; volta ao 'Backlog' e usa o seletor 'Mover para sprint' (helper cy.moverHistoriaParaSprint) pra mandar a história ao Sprint 1",
+        "US6 (Kanban): abre a tab 'Board' e confirma que o card inicia na coluna 'A fazer' (status padrão to_do)",
+        "US6 (drag & drop): arrasta o card 'A fazer' -> 'Em andamento' (helper cy.arrastarCard dispara dragstart/dragover/drop nativos do HTML5) e confirma na coluna; depois arrasta 'Em andamento' -> 'Concluído'",
+        "Confirma que a história terminou na coluna 'Concluído'"
+      ],
+      "code": "describe('US3/US5/US6 - Backlog e Board Kanban', () => {\n  const HISTORIA = 'Tela de login'\n  beforeEach(() => {\n    const carimbo = Date.now()\n    cy.registrar({ username: `dev_${carimbo}`, email: `dev_${carimbo}@teste.com`, password: 'senha123' })\n    cy.contains('button', '+ Novo Projeto').click()\n    cy.get('input[placeholder=\"Ex: Loja Online\"]').type('Projeto Kanban')\n    cy.get('textarea[placeholder=\"Ex: E-commerce de roupas com pagamento online\"]').type('Projeto para testar o board')\n    cy.contains('button', 'Criar sem IA').click()\n    cy.contains('Projeto Kanban').click()\n    cy.contains('Backlog do Produto').should('be.visible')\n  })\n\n  it('cria uma historia no backlog', () => {\n    cy.contains('button', '+ Nova História').click()\n    cy.get('input[placeholder*=\"Como usuário, quero fazer login\"]').type(HISTORIA)\n    cy.contains('button', 'Criar').click()\n    cy.contains(HISTORIA).should('be.visible')\n  })\n\n  it('move a historia do backlog para o board e arrasta To Do -> In Progress -> Done', () => {\n    cy.contains('button', '+ Nova História').click()\n    cy.get('input[placeholder*=\"Como usuário, quero fazer login\"]').type(HISTORIA)\n    cy.contains('button', 'Criar').click()\n    cy.contains(HISTORIA).should('be.visible')\n    cy.contains('button', 'Sprints').click()\n    cy.contains('button', '+ Novo Sprint').click()\n    cy.get('input[placeholder=\"Sprint 1\"]').type('Sprint 1')\n    cy.contains('button', 'Criar').click()\n    cy.contains('Sprint 1').should('be.visible')\n    cy.contains('button', 'Backlog').click()\n    cy.moverHistoriaParaSprint('Sprint 1')\n    cy.contains('button', 'Board').click()\n    cy.contains('h3', 'A fazer').parents('div.rounded-lg').first().should('contain', HISTORIA)\n    cy.arrastarCard(HISTORIA, 'Em andamento')\n    cy.contains('h3', 'Em andamento').parents('div.rounded-lg').first().should('contain', HISTORIA)\n    cy.arrastarCard(HISTORIA, 'Concluído')\n    cy.contains('h3', 'Concluído').parents('div.rounded-lg').first().should('contain', HISTORIA)\n  })\n})\n\n// helper cy.arrastarCard: dispara dragstart no card e dragover+drop na coluna destino (DataTransfer nativo HTML5)",
+      "whatItTests": "Valida o núcleo do fluxo de trabalho do time: criar história no backlog (US3), movê-la para um sprint (US5) e arrastá-la pelas colunas do Kanban com drag & drop nativo HTML5 (US6).",
+      "expectedResult": "A história é criada e listada no backlog, entra no Sprint 1, aparece na coluna 'A fazer' do Board e, após as arrastadas, termina na coluna 'Concluído'."
+    },
+    {
+      "name": "US4/US5 — Sprint e mover historia",
+      "status": "passed",
+      "durationMs": 7000,
+      "video": "videos/04-sprint.cy.js.mp4",
+      "steps": [
+        "Pré-condição (beforeEach): registra/loga usuário novo, cria projeto 'Projeto Sprint' sem IA, abre o projeto e confirma 'Backlog do Produto'",
+        "US4 (criar sprint): vai na tab 'Sprints', clica em '+ Novo Sprint', digita o nome 'Sprint de Maio', clica em 'Criar' e confirma o sprint na lista",
+        "US5 (mover história): cria a história 'Cadastro de cliente' no backlog, cria o 'Sprint de Maio' e volta ao 'Backlog'",
+        "US5: no card da história usa o seletor 'Mover para sprint' (helper cy.moverHistoriaParaSprint) pra escolher 'Sprint de Maio'",
+        "Confirma que a história sumiu da visão padrão do backlog (que só mostra o que NÃO está em sprint)",
+        "Liga o filtro 'Mostrar histórias em sprints' e confirma que a história reaparece (continua existindo, agora dentro do sprint)"
+      ],
+      "code": "describe('US4/US5 - Sprint e mover historia', () => {\n  const HISTORIA = 'Cadastro de cliente'\n  const SPRINT = 'Sprint de Maio'\n  beforeEach(() => {\n    const carimbo = Date.now()\n    cy.registrar({ username: `po_${carimbo}`, email: `po_${carimbo}@teste.com`, password: 'senha123' })\n    cy.contains('button', '+ Novo Projeto').click()\n    cy.get('input[placeholder=\"Ex: Loja Online\"]').type('Projeto Sprint')\n    cy.get('textarea[placeholder=\"Ex: E-commerce de roupas com pagamento online\"]').type('Projeto para testar sprints')\n    cy.contains('button', 'Criar sem IA').click()\n    cy.contains('Projeto Sprint').click()\n    cy.contains('Backlog do Produto').should('be.visible')\n  })\n\n  it('cria um sprint na tab Sprints', () => {\n    cy.contains('button', 'Sprints').click()\n    cy.contains('button', '+ Novo Sprint').click()\n    cy.get('input[placeholder=\"Sprint 1\"]').type(SPRINT)\n    cy.contains('button', 'Criar').click()\n    cy.contains(SPRINT).should('be.visible')\n  })\n\n  it('move uma historia do backlog para o sprint criado', () => {\n    cy.contains('button', '+ Nova História').click()\n    cy.get('input[placeholder*=\"Como usuário, quero fazer login\"]').type(HISTORIA)\n    cy.contains('button', 'Criar').click()\n    cy.contains(HISTORIA).should('be.visible')\n    cy.contains('button', 'Sprints').click()\n    cy.contains('button', '+ Novo Sprint').click()\n    cy.get('input[placeholder=\"Sprint 1\"]').type(SPRINT)\n    cy.contains('button', 'Criar').click()\n    cy.contains(SPRINT).should('be.visible')\n    cy.contains('button', 'Backlog').click()\n    cy.moverHistoriaParaSprint(SPRINT)\n    cy.contains(HISTORIA).should('not.exist')\n    cy.contains('label', 'Mostrar histórias em sprints').find('input').check()\n    cy.contains(HISTORIA).should('be.visible')\n  })\n})\n\n// helper cy.moverHistoriaParaSprint: no <select title=\"Mover para sprint\"> acha a option que contem o nome do sprint, lê o value (id) e seleciona por value",
+      "whatItTests": "Valida o planejamento de sprint: criar um sprint nomeado (US4) e mover uma história do backlog para esse sprint pelo seletor (US5), incluindo o filtro de visibilidade do backlog.",
+      "expectedResult": "O sprint 'Sprint de Maio' é criado e listado; ao mover a história, ela some da visão padrão do backlog e reaparece quando o filtro 'Mostrar histórias em sprints' é ativado."
+    }
+  ],
+  "pyramid": {
+    "unit": 63,
+    "integration": 93,
+    "e2e": 9
+  },
+  "ai": {
+    "summary": "a definir",
+    "pros": [],
+    "cons": []
+  },
+  "team": [
+    {
+      "name": "Gabriel Camargos da Silveira",
+      "role": "a definir",
+      "contributions": [
+        "a definir"
+      ],
+      "commits": null
+    },
+    {
+      "name": "Lucas Miller dos Santos Sousa",
+      "role": "a definir",
+      "contributions": [
+        "a definir"
+      ],
+      "commits": null
+    },
+    {
+      "name": "Miguel Eduardo Tang",
+      "role": "a definir",
+      "contributions": [
+        "a definir"
+      ],
+      "commits": null
+    },
+    {
+      "name": "Rafael Araujo Camargo Pinheiro",
+      "role": "a definir",
+      "contributions": [
+        "a definir"
+      ],
+      "commits": null
+    }
+  ]
+}

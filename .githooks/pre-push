@@ -1,0 +1,32 @@
+#!/bin/sh
+# Hook pre-push: dispara deploy de produção na Vercel a cada git push.
+# Pre-push roda ANTES do push remoto chegar. Se o deploy falhar (exit != 0),
+# o push é cancelado - garante que código quebrado não chega ao GitHub
+# enquanto a versão em produção é a anterior (last good).
+#
+# Para ativar: git config core.hooksPath .githooks (ver scripts/setup.sh)
+
+echo ""
+echo "🚀 Deploying to Vercel before push..."
+echo "─────────────────────────────────────"
+
+if ! command -v vercel >/dev/null 2>&1; then
+  echo "⚠️  Vercel CLI não instalado. Pulando deploy."
+  echo "   Instale com: npm i -g vercel"
+  exit 0   # exit 0 = não bloqueia o push
+fi
+
+vercel --prod --yes
+DEPLOY_STATUS=$?
+
+if [ $DEPLOY_STATUS -ne 0 ]; then
+  echo ""
+  echo "❌ Deploy falhou. Push cancelado."
+  echo "   Para pular o deploy: git push --no-verify"
+  exit 1
+fi
+
+echo ""
+echo "✅ Deploy concluído. Prosseguindo com push..."
+echo ""
+exit 0

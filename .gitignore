@@ -1,0 +1,20 @@
+node_modules/
+*.db
+.env
+dist/
+*.db-shm
+*.db-wal
+
+.vercel
+
+# Cypress (artefatos gerados nas execucoes E2E)
+cypress/screenshots/
+cypress/videos/
+cypress/downloads/
+
+# Cobertura e artefatos de teste gerados
+backend/coverage/
+backend/jest-results.json
+
+# Materiais de estudo pessoais (fora do escopo do projeto)
+/COLA_*
