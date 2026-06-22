@@ -603,6 +603,21 @@ table.cov-table td.lo .file-flag{ color:var(--accent-ink); }
 .suite > .suite-head .sname{ font-family:var(--font-display); font-weight:600; font-size:1.05rem; }
 .suite > .suite-head .sfile{ font-family:var(--font-mono); font-size:.72rem; color:var(--ink-soft); }
 
+/* --- dono da fatia: quem APRESENTA cada suíte/E2E (divisão do grupo, TP2) --- */
+.owner-badge{
+  display:inline-block; font-family:var(--font-mono); font-size:.62rem;
+  text-transform:uppercase; letter-spacing:.06em; line-height:1.45;
+  padding:.12em .55em; border:1px solid var(--rule-strong); border-left-width:3px;
+  border-radius:2px; color:var(--ink-soft); background:rgba(22,19,8,0.03);
+  white-space:nowrap; vertical-align:middle;
+}
+.suite > .suite-head .owner-badge{ margin-right:auto; }
+.own-banco{ border-left-color:#1d4ed8; }   /* azul — Banco (Rafael) */
+.own-api{ border-left-color:#B23A18; }      /* vermelho-tinta — API */
+.own-unidade{ border-left-color:#2F6B5E; }  /* verde-petróleo — Unidade */
+.own-front{ border-left-color:#6d28d9; }    /* roxo — Front-end */
+.owner-line{ display:flex; gap:.45em; flex-wrap:wrap; margin:.15em 0 .55em; }
+
 .test-row{ border-bottom:1px solid var(--rule); }
 .test-row.pinned{ border-left:3px solid var(--accent); padding-left:10px; margin-left:-13px; }
 .test-row > details{ }
@@ -2768,68 +2783,150 @@ window.__DATA__ = {
   ],
   "e2e": [
     {
-      "name": "US1 — Registro e Login",
+      "name": "US1 · Registro — cria conta e cai em \"Meus Projetos\"",
       "status": "passed",
-      "durationMs": 8000,
+      "durationMs": null,
+      "steps": [
+        "Abre o app (cy.visit \"/\")",
+        "Clica em \"Criar conta\" e preenche usuário, email e senha únicos (carimbo de tempo)",
+        "Clica em \"Criar Conta\"",
+        "Confirma que \"Meus Projetos\" aparece (registro já loga)"
+      ],
+      "screenshot": "",
       "video": "videos/01-registro-login.cy.js.mp4",
-      "steps": [
-        "Abre o app na tela de Login (cy.visit('/'))",
-        "Caminho feliz (registro): clica em 'Criar conta', preenche usuário/email/senha únicos (carimbo de tempo) e clica em 'Criar Conta'; confirma que cai em 'Meus Projetos' (o registro já loga)",
-        "Caminho feliz (login): registra uma conta nova, clica em 'Sair' pra voltar ao Login, digita email + senha corretos e clica em 'Entrar'; confirma que 'Meus Projetos' aparece de novo",
-        "Caminho triste (senha errada): registra e sai, tenta entrar com senha incorreta; confirma que o backend recusa (401), o botão 'Entrar' continua visível e 'Meus Projetos' NÃO aparece"
-      ],
-      "code": "describe('US1 - Registro e Login', () => {\n  it('registra uma conta nova e cai na tela de projetos', () => {\n    const carimbo = Date.now()\n    const usuario = { username: `joao_${carimbo}`, email: `joao_${carimbo}@teste.com`, password: 'senha123' }\n    cy.visit('/')\n    cy.contains('button', 'Criar conta').click()\n    cy.get('input[placeholder=\"Nome de usuário\"]').type(usuario.username)\n    cy.get('input[placeholder=\"Email\"]').type(usuario.email)\n    cy.get('input[placeholder=\"Senha\"]').type(usuario.password)\n    cy.contains('button', 'Criar Conta').click()\n    cy.contains('Meus Projetos').should('be.visible')\n  })\n\n  it('faz login com uma conta que acabou de ser criada', () => {\n    const carimbo = Date.now()\n    const usuario = { username: `maria_${carimbo}`, email: `maria_${carimbo}@teste.com`, password: 'senha123' }\n    cy.registrar(usuario)\n    cy.contains('Meus Projetos').should('be.visible')\n    cy.contains('button', 'Sair').click()\n    cy.get('input[placeholder=\"Email\"]').type(usuario.email)\n    cy.get('input[placeholder=\"Senha\"]').type(usuario.password)\n    cy.contains('button', 'Entrar').click()\n    cy.contains('Meus Projetos').should('be.visible')\n  })\n\n  it('nao deixa entrar quando a senha esta errada', () => {\n    const carimbo = Date.now()\n    const usuario = { username: `ana_${carimbo}`, email: `ana_${carimbo}@teste.com`, password: 'senha123' }\n    cy.registrar(usuario)\n    cy.contains('button', 'Sair').click()\n    cy.get('input[placeholder=\"Email\"]').type(usuario.email)\n    cy.get('input[placeholder=\"Senha\"]').type('senha-errada')\n    cy.contains('button', 'Entrar').click()\n    cy.contains('button', 'Entrar').should('be.visible')\n    cy.contains('Meus Projetos').should('not.exist')\n  })\n})\n\n// helper cy.registrar: abre '/', clica 'Criar conta', preenche os 3 campos e clica 'Criar Conta'",
-      "whatItTests": "Valida o fluxo completo de autenticação pela UI: registro de conta nova (que já loga), login posterior com as credenciais criadas, e a rejeição de login com senha errada.",
-      "expectedResult": "Registro e login corretos levam o usuário à tela 'Meus Projetos'; com senha errada o backend retorna 401, o usuário permanece na tela de Login e nunca alcança 'Meus Projetos'."
+      "code": "it('registra uma conta nova e cai na tela de projetos', () => {\r\n    // Verifica que, ao criar uma conta valida, o usuario e levado para a area\r\n    // logada (a tela \"Meus Projetos\"), ou seja, o registro JA loga.\r\n\r\n    // Arrange: dados unicos para nao colidir com o email UNICO do banco fake\r\n    const carimbo = Date.now()\r\n    const usuario = {\r\n      username: `joao_${carimbo}`,\r\n      email: `joao_${carimbo}@teste.com`,\r\n      password: 'senha123',\r\n    }\r\n\r\n    // Act: abre o app, vai para \"Criar conta\" e preenche o formulario\r\n    cy.visit('/')\r\n    cy.contains('button', 'Criar conta').click()\r\n    cy.get('input[placeholder=\"Nome de usuário\"]').type(usuario.username)\r\n    cy.get('input[placeholder=\"Email\"]').type(usuario.email)\r\n    cy.get('input[placeholder=\"Senha\"]').type(usuario.password)\r\n    cy.contains('button', 'Criar Conta').click()\r\n\r\n    // Assert: a tela logada mostra o titulo \"Meus Projetos\"\r\n    cy.contains('Meus Projetos').should('be.visible')\r\n  })",
+      "whatItTests": "Registro pela UI: preenche usuário/email/senha únicos e clica em \"Criar Conta\".",
+      "expectedResult": "O registro já loga: o usuário cai direto na tela \"Meus Projetos\"."
     },
     {
-      "name": "US2 — Criar projeto",
+      "name": "US1 · Login — entra com a conta recém-criada",
       "status": "passed",
-      "durationMs": 8000,
+      "durationMs": null,
+      "steps": [
+        "Registra uma conta (helper cy.registrar) e confirma \"Meus Projetos\"",
+        "Clica em \"Sair\" pra voltar ao Login",
+        "Digita email + senha corretos e clica em \"Entrar\"",
+        "Confirma que \"Meus Projetos\" reaparece"
+      ],
+      "screenshot": "",
+      "video": "videos/01-registro-login.cy.js.mp4",
+      "code": "it('faz login com uma conta que acabou de ser criada', () => {\r\n    // Verifica o login propriamente dito: criamos a conta, saimos, e entramos\r\n    // de novo digitando email e senha na tela de Login.\r\n\r\n    // Arrange: cria a conta (que ja loga) e depois clica em \"Sair\"\r\n    const carimbo = Date.now()\r\n    const usuario = {\r\n      username: `maria_${carimbo}`,\r\n      email: `maria_${carimbo}@teste.com`,\r\n      password: 'senha123',\r\n    }\r\n    cy.registrar(usuario)              // helper: cria a conta pela UI\r\n    cy.contains('Meus Projetos').should('be.visible')\r\n    cy.contains('button', 'Sair').click()   // volta para a tela de Login\r\n\r\n    // Act: preenche email + senha e clica em \"Entrar\"\r\n    cy.get('input[placeholder=\"Email\"]').type(usuario.email)\r\n    cy.get('input[placeholder=\"Senha\"]').type(usuario.password)\r\n    cy.contains('button', 'Entrar').click()\r\n\r\n    // Assert: logou de novo -> a tela \"Meus Projetos\" aparece\r\n    cy.contains('Meus Projetos').should('be.visible')\r\n  })",
+      "whatItTests": "Login pela UI: registra, sai e entra de novo com email + senha corretos.",
+      "expectedResult": "Após \"Entrar\", a tela \"Meus Projetos\" aparece novamente."
+    },
+    {
+      "name": "US1 · Login bloqueado — senha errada não entra (401)",
+      "status": "passed",
+      "durationMs": null,
+      "steps": [
+        "Registra a conta e clica em \"Sair\"",
+        "Digita o email certo e uma senha ERRADA, clica em \"Entrar\"",
+        "Backend recusa (401)",
+        "Confirma que \"Entrar\" segue visível e \"Meus Projetos\" não existe"
+      ],
+      "screenshot": "",
+      "video": "videos/01-registro-login.cy.js.mp4",
+      "code": "it('nao deixa entrar quando a senha esta errada', () => {\r\n    // Verifica o \"caminho triste\": com senha errada o backend devolve 401 e o\r\n    // usuario NAO entra. (Detalhe do app: em 401 o frontend limpa a sessao e\r\n    // recarrega, entao o usuario simplesmente continua na tela de Login, sem\r\n    // alcancar \"Meus Projetos\".)\r\n\r\n    // Arrange: cria a conta e sai\r\n    const carimbo = Date.now()\r\n    const usuario = {\r\n      username: `ana_${carimbo}`,\r\n      email: `ana_${carimbo}@teste.com`,\r\n      password: 'senha123',\r\n    }\r\n    cy.registrar(usuario)\r\n    cy.contains('button', 'Sair').click()\r\n\r\n    // Act: tenta logar com a senha ERRADA\r\n    cy.get('input[placeholder=\"Email\"]').type(usuario.email)\r\n    cy.get('input[placeholder=\"Senha\"]').type('senha-errada')\r\n    cy.contains('button', 'Entrar').click()\r\n\r\n    // Assert: continua na tela de Login (botao \"Entrar\" visivel) e NAO entrou\r\n    cy.contains('button', 'Entrar').should('be.visible')\r\n    cy.contains('Meus Projetos').should('not.exist')\r\n  })",
+      "whatItTests": "Caminho triste: logar com senha incorreta deve ser recusado pelo backend (401).",
+      "expectedResult": "Continua na tela de Login (botão \"Entrar\" visível) e \"Meus Projetos\" NÃO aparece."
+    },
+    {
+      "name": "US2 · Cria projeto e ele aparece na lista",
+      "status": "passed",
+      "durationMs": null,
+      "steps": [
+        "Pré-condição (beforeEach): usuário novo já logado",
+        "Clica em \"+ Novo Projeto\", preenche nome e descrição",
+        "Clica em \"Criar sem IA\" (offline, sem Gemini)",
+        "Confirma o card do projeto na lista"
+      ],
+      "screenshot": "",
       "video": "videos/02-criar-projeto.cy.js.mp4",
-      "steps": [
-        "Pré-condição (beforeEach): registra e loga um usuário novo (carimbo de tempo) e confirma 'Meus Projetos'",
-        "Caminho feliz: clica em '+ Novo Projeto', preenche nome ('Loja do Ze') e descrição, clica em 'Criar sem IA' (offline/determinístico, sem chamar o Gemini)",
-        "Confirma que volta para 'Meus Projetos' e que o card do projeto recém-criado está visível",
-        "Regra de negócio (papel PO): cria outro projeto ('App de Tarefas') sem IA e confirma que o card exibe a etiqueta de papel 'PO' (quem cria vira Product Owner)"
-      ],
-      "code": "describe('US2 - Criar projeto', () => {\n  beforeEach(() => {\n    const carimbo = Date.now()\n    cy.registrar({ username: `dono_${carimbo}`, email: `dono_${carimbo}@teste.com`, password: 'senha123' })\n    cy.contains('Meus Projetos').should('be.visible')\n  })\n\n  it('cria um projeto e ele aparece na lista de projetos', () => {\n    cy.contains('button', '+ Novo Projeto').click()\n    cy.contains('Novo Projeto').should('be.visible')\n    cy.get('input[placeholder=\"Ex: Loja Online\"]').type('Loja do Ze')\n    cy.get('textarea[placeholder=\"Ex: E-commerce de roupas com pagamento online\"]').type('E-commerce de camisetas')\n    cy.contains('button', 'Criar sem IA').click()\n    cy.contains('Meus Projetos').should('be.visible')\n    cy.contains('Loja do Ze').should('be.visible')\n  })\n\n  it('mostra o papel \"PO\" no projeto criado (quem cria vira Product Owner)', () => {\n    cy.contains('button', '+ Novo Projeto').click()\n    cy.get('input[placeholder=\"Ex: Loja Online\"]').type('App de Tarefas')\n    cy.get('textarea[placeholder=\"Ex: E-commerce de roupas com pagamento online\"]').type('Gerenciador de tarefas simples')\n    cy.contains('button', 'Criar sem IA').click()\n    cy.contains('App de Tarefas').should('be.visible')\n    cy.contains('PO').should('be.visible')\n  })\n})",
-      "whatItTests": "Valida que um usuário logado cria um projeto pela UI (via 'Criar sem IA', sem dependência de rede/Gemini) e que o criador é registrado como Product Owner (PO).",
-      "expectedResult": "O projeto criado aparece como card na lista 'Meus Projetos' e o card exibe a etiqueta de papel 'PO' para quem o criou."
+      "code": "it('cria um projeto e ele aparece na lista de projetos', () => {\r\n    // Verifica o caminho feliz: preencher nome + descricao, salvar, e ver o\r\n    // card do projeto recem-criado na tela \"Meus Projetos\".\r\n\r\n    // Arrange: abre o formulario de novo projeto\r\n    cy.contains('button', '+ Novo Projeto').click()\r\n    cy.contains('Novo Projeto').should('be.visible')\r\n\r\n    // Act: preenche nome + descricao e cria SEM IA (offline)\r\n    cy.get('input[placeholder=\"Ex: Loja Online\"]').type('Loja do Ze')\r\n    cy.get('textarea[placeholder=\"Ex: E-commerce de roupas com pagamento online\"]')\r\n      .type('E-commerce de camisetas')\r\n    cy.contains('button', 'Criar sem IA').click()\r\n\r\n    // Assert: voltou para a lista e o card do novo projeto esta visivel\r\n    cy.contains('Meus Projetos').should('be.visible')\r\n    cy.contains('Loja do Ze').should('be.visible')\r\n  })",
+      "whatItTests": "Usuário logado cria um projeto (sem IA, offline) e vê o card na lista.",
+      "expectedResult": "Volta para \"Meus Projetos\" e o card do projeto recém-criado fica visível."
     },
     {
-      "name": "US3/US5/US6 — Backlog e Kanban",
+      "name": "US2 · Quem cria o projeto vira PO (Product Owner)",
       "status": "passed",
-      "durationMs": 7000,
+      "durationMs": null,
+      "steps": [
+        "Pré-condição: usuário novo já logado",
+        "Cria um projeto sem IA",
+        "Confirma o card do projeto",
+        "Confirma a etiqueta \"PO\" no card"
+      ],
+      "screenshot": "",
+      "video": "videos/02-criar-projeto.cy.js.mp4",
+      "code": "it('mostra o papel \"PO\" no projeto criado (quem cria vira Product Owner)', () => {\r\n    // Verifica uma regra de negocio importante: quem CRIA o projeto entra como\r\n    // PO (Product Owner). O card do projeto exibe esse papel.\r\n\r\n    // Arrange + Act: cria um projeto sem IA\r\n    cy.contains('button', '+ Novo Projeto').click()\r\n    cy.get('input[placeholder=\"Ex: Loja Online\"]').type('App de Tarefas')\r\n    cy.get('textarea[placeholder=\"Ex: E-commerce de roupas com pagamento online\"]')\r\n      .type('Gerenciador de tarefas simples')\r\n    cy.contains('button', 'Criar sem IA').click()\r\n\r\n    // Assert: o card do projeto mostra a etiqueta de papel \"PO\"\r\n    cy.contains('App de Tarefas').should('be.visible')\r\n    cy.contains('PO').should('be.visible')\r\n  })",
+      "whatItTests": "Regra de negócio: o criador do projeto entra como PO.",
+      "expectedResult": "O card do projeto exibe a etiqueta de papel \"PO\"."
+    },
+    {
+      "name": "US3 · Cria história no backlog",
+      "status": "passed",
+      "durationMs": null,
+      "steps": [
+        "Pré-condição: usuário + projeto novos, na aba Backlog",
+        "Clica em \"+ Nova História\" e digita o título",
+        "Clica em \"Criar\"",
+        "Confirma a história no backlog"
+      ],
+      "screenshot": "",
       "video": "videos/03-backlog-kanban.cy.js.mp4",
-      "steps": [
-        "Pré-condição (beforeEach): registra/loga usuário novo, cria projeto 'Projeto Kanban' sem IA, abre o projeto e confirma 'Backlog do Produto'",
-        "US3 (criar história): clica em '+ Nova História', digita o título 'Tela de login', clica em 'Criar' e confirma a história listada no backlog",
-        "US5 (planejar sprint): vai na tab 'Sprints', cria 'Sprint 1' e confirma na lista; volta ao 'Backlog' e usa o seletor 'Mover para sprint' (helper cy.moverHistoriaParaSprint) pra mandar a história ao Sprint 1",
-        "US6 (Kanban): abre a tab 'Board' e confirma que o card inicia na coluna 'A fazer' (status padrão to_do)",
-        "US6 (drag & drop): arrasta o card 'A fazer' -> 'Em andamento' (helper cy.arrastarCard dispara dragstart/dragover/drop nativos do HTML5) e confirma na coluna; depois arrasta 'Em andamento' -> 'Concluído'",
-        "Confirma que a história terminou na coluna 'Concluído'"
-      ],
-      "code": "describe('US3/US5/US6 - Backlog e Board Kanban', () => {\n  const HISTORIA = 'Tela de login'\n  beforeEach(() => {\n    const carimbo = Date.now()\n    cy.registrar({ username: `dev_${carimbo}`, email: `dev_${carimbo}@teste.com`, password: 'senha123' })\n    cy.contains('button', '+ Novo Projeto').click()\n    cy.get('input[placeholder=\"Ex: Loja Online\"]').type('Projeto Kanban')\n    cy.get('textarea[placeholder=\"Ex: E-commerce de roupas com pagamento online\"]').type('Projeto para testar o board')\n    cy.contains('button', 'Criar sem IA').click()\n    cy.contains('Projeto Kanban').click()\n    cy.contains('Backlog do Produto').should('be.visible')\n  })\n\n  it('cria uma historia no backlog', () => {\n    cy.contains('button', '+ Nova História').click()\n    cy.get('input[placeholder*=\"Como usuário, quero fazer login\"]').type(HISTORIA)\n    cy.contains('button', 'Criar').click()\n    cy.contains(HISTORIA).should('be.visible')\n  })\n\n  it('move a historia do backlog para o board e arrasta To Do -> In Progress -> Done', () => {\n    cy.contains('button', '+ Nova História').click()\n    cy.get('input[placeholder*=\"Como usuário, quero fazer login\"]').type(HISTORIA)\n    cy.contains('button', 'Criar').click()\n    cy.contains(HISTORIA).should('be.visible')\n    cy.contains('button', 'Sprints').click()\n    cy.contains('button', '+ Novo Sprint').click()\n    cy.get('input[placeholder=\"Sprint 1\"]').type('Sprint 1')\n    cy.contains('button', 'Criar').click()\n    cy.contains('Sprint 1').should('be.visible')\n    cy.contains('button', 'Backlog').click()\n    cy.moverHistoriaParaSprint('Sprint 1')\n    cy.contains('button', 'Board').click()\n    cy.contains('h3', 'A fazer').parents('div.rounded-lg').first().should('contain', HISTORIA)\n    cy.arrastarCard(HISTORIA, 'Em andamento')\n    cy.contains('h3', 'Em andamento').parents('div.rounded-lg').first().should('contain', HISTORIA)\n    cy.arrastarCard(HISTORIA, 'Concluído')\n    cy.contains('h3', 'Concluído').parents('div.rounded-lg').first().should('contain', HISTORIA)\n  })\n})\n\n// helper cy.arrastarCard: dispara dragstart no card e dragover+drop na coluna destino (DataTransfer nativo HTML5)",
-      "whatItTests": "Valida o núcleo do fluxo de trabalho do time: criar história no backlog (US3), movê-la para um sprint (US5) e arrastá-la pelas colunas do Kanban com drag & drop nativo HTML5 (US6).",
-      "expectedResult": "A história é criada e listada no backlog, entra no Sprint 1, aparece na coluna 'A fazer' do Board e, após as arrastadas, termina na coluna 'Concluído'."
+      "code": "it('cria uma historia no backlog', () => {\r\n    // Verifica o caminho mais basico (US3): abrir o formulario, dar um titulo e\r\n    // ver a historia listada no backlog.\r\n\r\n    // Act: abre o formulario \"Nova Historia\", preenche o titulo e cria\r\n    cy.contains('button', '+ Nova História').click()\r\n    cy.get('input[placeholder*=\"Como usuário, quero fazer login\"]').type(HISTORIA)\r\n    cy.contains('button', 'Criar').click()\r\n\r\n    // Assert: a historia aparece na lista do backlog\r\n    cy.contains(HISTORIA).should('be.visible')\r\n  })",
+      "whatItTests": "Caminho básico do backlog: criar uma história e vê-la listada.",
+      "expectedResult": "A história aparece na lista do backlog."
     },
     {
-      "name": "US4/US5 — Sprint e mover historia",
+      "name": "US3/US5/US6 · Move história e arrasta no Kanban (A fazer → Concluído)",
       "status": "passed",
-      "durationMs": 7000,
-      "video": "videos/04-sprint.cy.js.mp4",
+      "durationMs": null,
       "steps": [
-        "Pré-condição (beforeEach): registra/loga usuário novo, cria projeto 'Projeto Sprint' sem IA, abre o projeto e confirma 'Backlog do Produto'",
-        "US4 (criar sprint): vai na tab 'Sprints', clica em '+ Novo Sprint', digita o nome 'Sprint de Maio', clica em 'Criar' e confirma o sprint na lista",
-        "US5 (mover história): cria a história 'Cadastro de cliente' no backlog, cria o 'Sprint de Maio' e volta ao 'Backlog'",
-        "US5: no card da história usa o seletor 'Mover para sprint' (helper cy.moverHistoriaParaSprint) pra escolher 'Sprint de Maio'",
-        "Confirma que a história sumiu da visão padrão do backlog (que só mostra o que NÃO está em sprint)",
-        "Liga o filtro 'Mostrar histórias em sprints' e confirma que a história reaparece (continua existindo, agora dentro do sprint)"
+        "Cria a história no backlog",
+        "Cria \"Sprint 1\" e move a história pra ele",
+        "Abre o Board: card inicia em \"A fazer\"",
+        "Arrasta para \"Em andamento\" e depois \"Concluído\" (helper cy.arrastarCard)",
+        "Confirma a história em \"Concluído\""
       ],
-      "code": "describe('US4/US5 - Sprint e mover historia', () => {\n  const HISTORIA = 'Cadastro de cliente'\n  const SPRINT = 'Sprint de Maio'\n  beforeEach(() => {\n    const carimbo = Date.now()\n    cy.registrar({ username: `po_${carimbo}`, email: `po_${carimbo}@teste.com`, password: 'senha123' })\n    cy.contains('button', '+ Novo Projeto').click()\n    cy.get('input[placeholder=\"Ex: Loja Online\"]').type('Projeto Sprint')\n    cy.get('textarea[placeholder=\"Ex: E-commerce de roupas com pagamento online\"]').type('Projeto para testar sprints')\n    cy.contains('button', 'Criar sem IA').click()\n    cy.contains('Projeto Sprint').click()\n    cy.contains('Backlog do Produto').should('be.visible')\n  })\n\n  it('cria um sprint na tab Sprints', () => {\n    cy.contains('button', 'Sprints').click()\n    cy.contains('button', '+ Novo Sprint').click()\n    cy.get('input[placeholder=\"Sprint 1\"]').type(SPRINT)\n    cy.contains('button', 'Criar').click()\n    cy.contains(SPRINT).should('be.visible')\n  })\n\n  it('move uma historia do backlog para o sprint criado', () => {\n    cy.contains('button', '+ Nova História').click()\n    cy.get('input[placeholder*=\"Como usuário, quero fazer login\"]').type(HISTORIA)\n    cy.contains('button', 'Criar').click()\n    cy.contains(HISTORIA).should('be.visible')\n    cy.contains('button', 'Sprints').click()\n    cy.contains('button', '+ Novo Sprint').click()\n    cy.get('input[placeholder=\"Sprint 1\"]').type(SPRINT)\n    cy.contains('button', 'Criar').click()\n    cy.contains(SPRINT).should('be.visible')\n    cy.contains('button', 'Backlog').click()\n    cy.moverHistoriaParaSprint(SPRINT)\n    cy.contains(HISTORIA).should('not.exist')\n    cy.contains('label', 'Mostrar histórias em sprints').find('input').check()\n    cy.contains(HISTORIA).should('be.visible')\n  })\n})\n\n// helper cy.moverHistoriaParaSprint: no <select title=\"Mover para sprint\"> acha a option que contem o nome do sprint, lê o value (id) e seleciona por value",
-      "whatItTests": "Valida o planejamento de sprint: criar um sprint nomeado (US4) e mover uma história do backlog para esse sprint pelo seletor (US5), incluindo o filtro de visibilidade do backlog.",
-      "expectedResult": "O sprint 'Sprint de Maio' é criado e listado; ao mover a história, ela some da visão padrão do backlog e reaparece quando o filtro 'Mostrar histórias em sprints' é ativado."
+      "screenshot": "",
+      "video": "videos/03-backlog-kanban.cy.js.mp4",
+      "code": "it('move a historia do backlog para o board e arrasta To Do -> In Progress -> Done', () => {\r\n    // Verifica o fluxo completo do quadro: criar historia (US3), manda-la pra um\r\n    // sprint (US5) e arrastar o card pelas colunas do Kanban (US6).\r\n\r\n    // Arrange: cria a historia no backlog\r\n    cy.contains('button', '+ Nova História').click()\r\n    cy.get('input[placeholder*=\"Como usuário, quero fazer login\"]').type(HISTORIA)\r\n    cy.contains('button', 'Criar').click()\r\n    cy.contains(HISTORIA).should('be.visible')\r\n\r\n    // Arrange: cria um sprint na tab Sprints (assim o workspace ja conhece o\r\n    // sprint e o Board consegue abrir o quadro dele).\r\n    cy.contains('button', 'Sprints').click()\r\n    cy.contains('button', '+ Novo Sprint').click()\r\n    cy.get('input[placeholder=\"Sprint 1\"]').type('Sprint 1')\r\n    cy.contains('button', 'Criar').click()\r\n    cy.contains('Sprint 1').should('be.visible')\r\n\r\n    // Arrange: volta ao Backlog e move a historia para o sprint pelo seletor\r\n    cy.contains('button', 'Backlog').click()\r\n    cy.moverHistoriaParaSprint('Sprint 1')\r\n\r\n    // Act (parte 1): vai para a tab \"Board\" pra ver o quadro Kanban\r\n    cy.contains('button', 'Board').click()\r\n\r\n    // O card comeca na coluna \"A fazer\" (status padrao to_do)\r\n    cy.contains('h3', 'A fazer')\r\n      .parents('div.rounded-lg').first()\r\n      .should('contain', HISTORIA)\r\n\r\n    // Act (parte 2): arrasta A fazer -> Em andamento -> Concluido\r\n    cy.arrastarCard(HISTORIA, 'Em andamento')\r\n    cy.contains('h3', 'Em andamento')\r\n      .parents('div.rounded-lg').first()\r\n      .should('contain', HISTORIA)\r\n\r\n    cy.arrastarCard(HISTORIA, 'Concluído')\r\n\r\n    // Assert: a historia terminou na coluna \"Concluido\"\r\n    cy.contains('h3', 'Concluído')\r\n      .parents('div.rounded-lg').first()\r\n      .should('contain', HISTORIA)\r\n  })",
+      "whatItTests": "Fluxo completo do quadro: criar história, mandar pro sprint e arrastar pelas colunas (drag & drop nativo).",
+      "expectedResult": "A história percorre A fazer → Em andamento → Concluído no Board."
+    },
+    {
+      "name": "US4 · Cria sprint na aba Sprints",
+      "status": "passed",
+      "durationMs": null,
+      "steps": [
+        "Pré-condição: usuário + projeto novos, na aba Backlog",
+        "Vai na aba \"Sprints\" e clica em \"+ Novo Sprint\"",
+        "Digita o nome e clica em \"Criar\"",
+        "Confirma o sprint na lista"
+      ],
+      "screenshot": "",
+      "video": "videos/04-sprint.cy.js.mp4",
+      "code": "it('cria um sprint na tab Sprints', () => {\r\n    // Verifica o caminho basico do US4: abrir o formulario de sprint, dar um\r\n    // nome e ver o sprint listado.\r\n\r\n    // Act: vai para a tab Sprints, abre o formulario e cria o sprint\r\n    cy.contains('button', 'Sprints').click()\r\n    cy.contains('button', '+ Novo Sprint').click()\r\n    cy.get('input[placeholder=\"Sprint 1\"]').type(SPRINT)\r\n    cy.contains('button', 'Criar').click()\r\n\r\n    // Assert: o sprint recem-criado aparece na lista de sprints\r\n    cy.contains(SPRINT).should('be.visible')\r\n  })",
+      "whatItTests": "Caminho básico do US4: criar um sprint nomeado.",
+      "expectedResult": "O sprint recém-criado aparece na lista de sprints."
+    },
+    {
+      "name": "US4/US5 · Move história do backlog para o sprint",
+      "status": "passed",
+      "durationMs": null,
+      "steps": [
+        "Cria a história no backlog",
+        "Cria o sprint e volta ao Backlog",
+        "Usa o seletor \"Mover para sprint\" (helper cy.moverHistoriaParaSprint)",
+        "Confirma que a história saiu da visão padrão",
+        "Liga \"Mostrar histórias em sprints\" e confirma que reaparece"
+      ],
+      "screenshot": "",
+      "video": "videos/04-sprint.cy.js.mp4",
+      "code": "it('move uma historia do backlog para o sprint criado', () => {\r\n    // Verifica o US5 ponta a ponta: ter uma historia no backlog, criar um\r\n    // sprint, e mover a historia pra ele pelo seletor do backlog. A prova de que\r\n    // moveu: a historia some da visao padrao do backlog (que so mostra o que NAO\r\n    // esta em sprint) e reaparece quando ligamos \"Mostrar historias em sprints\".\r\n\r\n    // Arrange: cria a historia no backlog\r\n    cy.contains('button', '+ Nova História').click()\r\n    cy.get('input[placeholder*=\"Como usuário, quero fazer login\"]').type(HISTORIA)\r\n    cy.contains('button', 'Criar').click()\r\n    cy.contains(HISTORIA).should('be.visible')\r\n\r\n    // Arrange: cria o sprint na tab Sprints e volta para o Backlog\r\n    cy.contains('button', 'Sprints').click()\r\n    cy.contains('button', '+ Novo Sprint').click()\r\n    cy.get('input[placeholder=\"Sprint 1\"]').type(SPRINT)\r\n    cy.contains('button', 'Criar').click()\r\n    cy.contains(SPRINT).should('be.visible')\r\n    cy.contains('button', 'Backlog').click()\r\n\r\n    // Act: no card da historia, escolhe o sprint no seletor \"Mover para sprint\"\r\n    // (helper que acha a opcao do sprint pelo nome e seleciona).\r\n    cy.moverHistoriaParaSprint(SPRINT)\r\n\r\n    // Assert (parte 1): a historia saiu da visao padrao do backlog\r\n    cy.contains(HISTORIA).should('not.exist')\r\n\r\n    // Assert (parte 2): ligando \"Mostrar historias em sprints\", ela reaparece\r\n    // (continua existindo, agora dentro do sprint).\r\n    cy.contains('label', 'Mostrar histórias em sprints').find('input').check()\r\n    cy.contains(HISTORIA).should('be.visible')\r\n  })",
+      "whatItTests": "US5 ponta a ponta: mover uma história do backlog para um sprint pelo seletor.",
+      "expectedResult": "A história some da visão padrão do backlog e reaparece com o filtro \"Mostrar histórias em sprints\"."
     }
   ],
   "pyramid": {
@@ -2845,33 +2942,41 @@ window.__DATA__ = {
   "team": [
     {
       "name": "Gabriel Camargos da Silveira",
-      "role": "a definir",
+      "role": "Unidade (IA, sprints, middleware) + integração de projects",
       "contributions": [
-        "a definir"
+        "47 testes: 32 de unidade (ai, sprints, middleware) + 15 de integração da rota projects",
+        "Unidade: partição, valor-limite, robustez. Integração: CRUD de projeto + convites",
+        "Comando: npx jest unit/ai.unit.test.js unit/sprints.unit.test.js unit/middleware.unit.test.js tests/projects.test.js"
       ],
       "commits": null
     },
     {
       "name": "Lucas Miller dos Santos Sousa",
-      "role": "a definir",
+      "role": "API (integração das rotas)",
       "contributions": [
-        "a definir"
+        "43 testes de integração (Supertest): auth, middleware, invitations, dashboard, ai, smoke",
+        "Contrato HTTP: status, validação, JWT, 403/404/409",
+        "Comando: npx jest tests/auth.test.js tests/middleware.test.js tests/invitations.test.js tests/dashboard.test.js tests/ai.test.js tests/smoke.test.js"
       ],
       "commits": null
     },
     {
       "name": "Miguel Eduardo Tang",
-      "role": "a definir",
+      "role": "Unidade (dashboard, histórias) + integração de sprints",
       "contributions": [
-        "a definir"
+        "41 testes: 31 de unidade (dashboard, stories) + 10 de integração da rota sprints",
+        "Unidade: whitelist, Math.round, sem divisão por zero; + type-check do front",
+        "Comando: npx jest unit/dashboard.unit.test.js unit/stories.unit.test.js tests/sprints.test.js"
       ],
       "commits": null
     },
     {
       "name": "Rafael Araujo Camargo Pinheiro",
-      "role": "a definir",
+      "role": "E2E + Banco de dados",
       "contributions": [
-        "a definir"
+        "9 testes E2E (Cypress): fluxo no navegador, dono do ambiente (USE_FAKE_DB)",
+        "25 testes de banco: integração de stories (persistência, mover backlog↔sprint)",
+        "Camada de dados: fakeSupabase, 6 tabelas sp_*, constraints (UNIQUE/FK/CHECK)"
       ],
       "commits": null
     }
@@ -3234,12 +3339,46 @@ window.__DATA__ = {
   }
 
   /* ---- suites de unidade ---- */
+  /* ============================================================
+     DONOS DAS FATIAS — quem APRESENTA cada teste (divisão do grupo)
+     Troque os nomes aqui (um lugar só) se a divisão real for outra.
+     ============================================================ */
+  var OWNERS = {
+    // COR = pessoa (azul Rafael · vermelho Lucas · verde Gabriel · roxo Miguel).
+    // O texto "Camada · Nome" é a fonte de verdade do que cada teste é.
+    // Banco (Rafael, azul): persistência de histórias
+    "tests/stories.test.js":     { who:"Rafael",  camada:"Banco",   k:"banco" },
+    // API (Lucas, vermelho): contrato HTTP da maioria das rotas
+    "tests/auth.test.js":        { who:"Lucas",   camada:"API",     k:"api" },
+    "tests/middleware.test.js":  { who:"Lucas",   camada:"API",     k:"api" },
+    "tests/invitations.test.js": { who:"Lucas",   camada:"API",     k:"api" },
+    "tests/dashboard.test.js":   { who:"Lucas",   camada:"API",     k:"api" },
+    "tests/ai.test.js":          { who:"Lucas",   camada:"API",     k:"api" },
+    "tests/smoke.test.js":       { who:"Lucas",   camada:"API",     k:"api" },
+    // Unidade (Gabriel, verde) + 1 rota de API (projects) p/ equilíbrio
+    "unit/ai.unit.test.js":         { who:"Gabriel", camada:"Unidade", k:"unidade" },
+    "unit/sprints.unit.test.js":    { who:"Gabriel", camada:"Unidade", k:"unidade" },
+    "unit/middleware.unit.test.js": { who:"Gabriel", camada:"Unidade", k:"unidade" },
+    "tests/projects.test.js":       { who:"Gabriel", camada:"API",     k:"unidade" },
+    // Unidade (Miguel, roxo) + 1 rota de persistência (sprints) p/ equilíbrio
+    "unit/dashboard.unit.test.js":  { who:"Miguel",  camada:"Unidade", k:"front" },
+    "unit/stories.unit.test.js":    { who:"Miguel",  camada:"Unidade", k:"front" },
+    "tests/sprints.test.js":        { who:"Miguel",  camada:"Banco",   k:"front" }
+  };
+  // E2E: Rafael é o dono único (sobe o ambiente/banco e roda o Cypress).
+  var OWNER_E2E = { infra:"Rafael" };
+  function ownerBadge(file){
+    var o = OWNERS[file];
+    if (!o) return "";
+    return '<span class="owner-badge own-'+o.k+'" title="Apresenta: '+esc(o.who)+
+           ' — camada '+esc(o.camada)+'">'+esc(o.camada)+' · '+esc(o.who)+'</span>';
+  }
   function renderSuites(suites){
     if (!suites.length) return '<p class="tbd">nenhuma suíte disponível</p>';
     var h = "";
     suites.forEach(function(su){
       h += '<div class="suite">';
-      h +=   '<div class="suite-head"><span class="sname">'+esc(su.name)+'</span><span class="sfile">'+esc(su.file||"")+'</span></div>';
+      h +=   '<div class="suite-head"><span class="sname">'+esc(su.name)+'</span>'+ownerBadge(su.file)+'<span class="sfile">'+esc(su.file||"")+'</span></div>';
       var tests = su.tests || [];
       if (!tests.length){
         h += '<p class="tbd" style="padding:10px 0">sem testes nesta suíte</p>';
@@ -3324,6 +3463,10 @@ window.__DATA__ = {
       h += '<article class="e2e-card st-'+st+' reveal">';
       h +=   '<span class="e2e-no">'+no+'</span>';
       h +=   '<h3><span class="g" aria-hidden="true">'+g+'</span><span>'+esc(e.name)+'</span></h3>';
+      // quem apresenta este E2E: Front (ótica da tela) + dono do ambiente/banco
+      h +=   '<div class="owner-line">'+
+             '<span class="owner-badge own-banco" title="Dono do E2E: sobe backend + banco fake e roda o Cypress, + camada de banco">E2E + Banco · '+esc(OWNER_E2E.infra)+'</span>'+
+             '</div>';
       // selo de status (verde quando passou) + N/N de casos do spec + duração
       h +=   '<div class="e2e-meta">';
       h +=     '<span class="e2e-seal seal-'+st+'"><span class="g" aria-hidden="true">'+g+'</span>'+STATUS_WORD[st]+

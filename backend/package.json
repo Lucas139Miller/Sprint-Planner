@@ -7,7 +7,12 @@
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
     "test": "jest",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "test:unit": "jest tests/unit",
+    "test:rafael": "jest tests/stories.test.js",
+    "test:lucas": "jest tests/auth.test.js tests/middleware.test.js tests/invitations.test.js tests/dashboard.test.js tests/ai.test.js tests/smoke.test.js",
+    "test:gabriel": "jest unit/ai.unit.test.js unit/sprints.unit.test.js unit/middleware.unit.test.js tests/projects.test.js",
+    "test:miguel": "jest unit/dashboard.unit.test.js unit/stories.unit.test.js tests/sprints.test.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.105.1",
